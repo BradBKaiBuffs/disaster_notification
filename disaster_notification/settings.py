@@ -79,8 +79,11 @@ WSGI_APPLICATION = 'disaster_notification.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 # PostgreSQL in Railway configuration
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
 DATABASES = {
     'default': dj_database_url.config(
+        default=DATABASE=URL
         conn_max_age=600,
         conn_health_checks=True,
         ssl_require=True
@@ -134,8 +137,8 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # add static root files
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
