@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 # Create your views here.
-def transit(request):
+def notification(request):
     return render(request, "homepage.html")
 
 def dashboard(request):
