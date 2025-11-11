@@ -124,6 +124,32 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# DJ Redis Panel configuration
+DJ_REDIS_PANEL_SETTINGS = {
+    "ALLOW_KEY_DELETE": False,
+    "ALLOW_KEY_EDIT": False,
+    "ALLOW_TTL_UPDATE": False,
+    "CURSOR_PAGINATED_SCAN": False,
+    "CURSOR_PAGINATED_COLLECTIONS": False,
+    "socket_timeout": 5.0,
+    "socket_connect_timeout": 5.0,
+    "INSTANCES": {
+        "local_redis": {
+            "description": "Local Redis Instance",
+            "host": "127.0.0.1",
+            "port": 6379,
+            "features": {
+                "ALLOW_KEY_DELETE": True,
+                "ALLOW_KEY_EDIT": True,
+                "ALLOW_TTL_UPDATE": True,
+                "CURSOR_PAGINATED_SCAN": True,
+                "CURSOR_PAGINATED_COLLECTIONS": True,
+            },
+        },
+    }
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
