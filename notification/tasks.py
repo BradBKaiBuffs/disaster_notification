@@ -2,6 +2,20 @@ import requests
 from celery import shared_task
 from dateutil.parser import isoparse
 from .models import noaa_alerts
+from django.contrib.auth.models import User
+
+"""
+Test if connections are working
+"""
+@shared_task
+def debug(user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+        print(f" Username: {user.username}")
+        return True
+    except Exception as e:
+        print(f"Access failed: {e}")
+        raise
 
 API_URL = "https://api.weather.gov/alerts/active"
 
