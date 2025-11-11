@@ -137,10 +137,10 @@ DJ_REDIS_PANEL_SETTINGS = {
     "socket_connect_timeout": 5.0,
     "INSTANCES": {
             "railway_redis": {
-            "description": "Railway Redis Broker",
-            "host": stored_redis_url.hostname,
-            "port": stored_redis_url.port,
-            "password": stored_redis_url.password,
+                "description": "Railway Redis Broker",
+                "host": stored_redis_url.hostname,
+                "port": stored_redis_url.port,
+                "password": stored_redis_url.password,
             "features": {
                 "ALLOW_KEY_DELETE": True,
                 "ALLOW_KEY_EDIT": True,
