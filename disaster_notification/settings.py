@@ -110,7 +110,7 @@ else:
     }
 
 # Celery/Redis configuration
-CELERY_BROKER_URL = os.environ.get('RABBITMQ_URL')
+CELERY_BROKER_URL = os.environ.get('REDIS_URL')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
