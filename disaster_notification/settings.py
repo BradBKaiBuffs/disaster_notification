@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 import dj_database_url
+from urllib.parse import urlparse
 from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -129,14 +130,11 @@ RAILWAY_REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
 
 # Admin Redis Panel configuration
 DJ_REDIS_PANEL_SETTINGS = {
-        "ALLOW_KEY_DELETE": False,
-        "ALLOW_KEY_EDIT": True,
-        "ALLOW_TTL_UPDATE": True,
-
+        # ...
         "INSTANCES": {
             "default": {
-                "description": "Default Redis Instance",
-                "host": RAILWAY_REDIS_HOST,
+                # ...
+                "host": RAILWAY_REDIS_HOST, # <-- This is 'None'
                 "port": RAILWAY_REDIS_PORT,
                 "password": RAILWAY_REDIS_PASSWORD if RAILWAY_REDIS_PASSWORD else None,
                 },
