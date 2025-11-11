@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 import dj_database_url
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,8 +28,11 @@ SECRET_KEY = 'django-insecure-r4dr2+e##qv1v%n9id#24^2n(s@i^k8h%h03qr&_sx+a@@fer(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+# adding specific hosts and domains
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'railway.app', 'disasternotification-production.up.railway.app', os.environ.get('HOST',''),]
 
+# tells Django to trust requests coming from below
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://disasternotification-production.up.railway.app',]
 
 # Application definition
 
@@ -41,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # add app
     'notification',
+    'rest_framework',
+    'dj-redis-panel',
 ]
 
 MIDDLEWARE = [
@@ -102,8 +108,40 @@ else:
         }
     }
 
-# Celery configuration
+# Celery/Redis configuration
 CELERY_BROKER_URL = os.environ.get('REDIS_URL')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Celery beat schedule
+CELERY_BEAT_SCHEDULE = {
+    'fetch-weather-alerts-every-10-mins': {
+        'task': 'notification.tasks.fetch_weather_alerts',
+        'schedule': crontab(minute='*/10')
+    },
+}
+
+# set variables for Redis information
+RAILWAY_REDIS_HOST = os.environ.get('REDIS_HOST')
+RAILWAY_REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+RAILWAY_REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+
+# Admin Redis Panel configuration
+DJ_REDIS_PANEL_SETTINGS = {
+        "ALLOW_KEY_DELETE": False,
+        "ALLOW_KEY_EDIT": True,
+        "ALLOW_TTL_UPDATE": True,
+
+        "INSTANCES": {
+            "default": {
+                "description": "Default Redis Instance",
+                "host": RAILWAY_REDIS_HOST,
+                "port": RAILWAY_REDIS_PORT,
+                "password": RAILWAY_REDIS_PASSWORD if RAILWAY_REDIS_PASSWORD else None,
+                },
+            },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
