@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'notification',
     'rest_framework',
     'dj-redis-panel',
+    'dj_redis_panel',
 ]
 
 MIDDLEWARE = [
