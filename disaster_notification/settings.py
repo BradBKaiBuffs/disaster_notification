@@ -124,6 +124,8 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+stored_redis_url = urlparse(REDIS_URL)
+
 # DJ Redis Panel configuration
 DJ_REDIS_PANEL_SETTINGS = {
     "ALLOW_KEY_DELETE": False,
@@ -134,10 +136,11 @@ DJ_REDIS_PANEL_SETTINGS = {
     "socket_timeout": 5.0,
     "socket_connect_timeout": 5.0,
     "INSTANCES": {
-        "local_redis": {
-            "description": "Local Redis Instance",
-            "host": "127.0.0.1",
-            "port": 6379,
+"railway_redis": {
+            "description": "Railway Redis Broker",
+            "host": parsed_redis_url.hostname,
+            "port": parsed_redis_url.port,
+            "password": parsed_redis_url.password,
             "features": {
                 "ALLOW_KEY_DELETE": True,
                 "ALLOW_KEY_EDIT": True,
@@ -148,7 +151,6 @@ DJ_REDIS_PANEL_SETTINGS = {
         },
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
