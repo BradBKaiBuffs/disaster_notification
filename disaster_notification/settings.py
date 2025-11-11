@@ -117,8 +117,8 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 # Celery beat schedule
 CELERY_BEAT_SCHEDULE = {
-    'fetch-weather-alerts-every-10-mins': {
-        'task': 'notification.tasks.fetch_weather_alerts',
+    'grab-noaa-alerts-every-10-mins': {
+        'task': 'notification.tasks.grab_noaa_alerts',
         'schedule': crontab(minute='*/10')
     },
 }
@@ -134,7 +134,7 @@ REDIS_URL = os.environ.get('REDIS_URL')
 if not RAILWAY_REDIS_HOST and REDIS_URL:
     try:
         url = urlparse(REDIS_URL)
-        # Overwrite variables if successfully parsed from the URL
+        # overwrite if successful
         RAILWAY_REDIS_HOST = url.hostname
         RAILWAY_REDIS_PORT = url.port
         RAILWAY_REDIS_PASSWORD = url.password
@@ -144,8 +144,12 @@ if not RAILWAY_REDIS_HOST and REDIS_URL:
 
 # Admin Redis Panel configuration
 DJ_REDIS_PANEL_SETTINGS = {
-        # ...
+        "ALLOW_KEY_DELETE": False,
+        "ALLOW_KEY_EDIT": True,
+        "ALLOW_TTL_UPDATE": True,
+
         "INSTANCES": {
+            "default": {
                 "host": RAILWAY_REDIS_HOST,
                 "port": RAILWAY_REDIS_PORT,
                 "password": RAILWAY_REDIS_PASSWORD if RAILWAY_REDIS_PASSWORD else None,
