@@ -123,7 +123,7 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(minute='*/10')
     },
 }
-
+REDIS_URL = os.environ.get('REDIS_URL')
 stored_redis_url = urlparse(REDIS_URL)
 
 # DJ Redis Panel configuration
@@ -136,11 +136,11 @@ DJ_REDIS_PANEL_SETTINGS = {
     "socket_timeout": 5.0,
     "socket_connect_timeout": 5.0,
     "INSTANCES": {
-"railway_redis": {
+            "railway_redis": {
             "description": "Railway Redis Broker",
-            "host": parsed_redis_url.hostname,
-            "port": parsed_redis_url.port,
-            "password": parsed_redis_url.password,
+            "host": stored_redis_url.hostname,
+            "port": stored_redis_url.port,
+            "password": stored_redis_url.password,
             "features": {
                 "ALLOW_KEY_DELETE": True,
                 "ALLOW_KEY_EDIT": True,
