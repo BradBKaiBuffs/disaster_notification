@@ -128,13 +128,25 @@ RAILWAY_REDIS_HOST = os.environ.get('REDIS_HOST')
 RAILWAY_REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 RAILWAY_REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
 
+REDIS_URL = os.environ.get('REDIS_URL')
+
+# troubleshooting redis disconnection
+if not RAILWAY_REDIS_HOST and REDIS_URL:
+    try:
+        url = urlparse(REDIS_URL)
+        # Overwrite variables if successfully parsed from the URL
+        RAILWAY_REDIS_HOST = url.hostname
+        RAILWAY_REDIS_PORT = url.port
+        RAILWAY_REDIS_PASSWORD = url.password
+    except Exception as e:
+        print(f"REDIS_URL for Redis panel not working: {e}")
+        pass
+
 # Admin Redis Panel configuration
 DJ_REDIS_PANEL_SETTINGS = {
         # ...
         "INSTANCES": {
-            "default": {
-                # ...
-                "host": RAILWAY_REDIS_HOST, # <-- This is 'None'
+                "host": RAILWAY_REDIS_HOST,
                 "port": RAILWAY_REDIS_PORT,
                 "password": RAILWAY_REDIS_PASSWORD if RAILWAY_REDIS_PASSWORD else None,
                 },
