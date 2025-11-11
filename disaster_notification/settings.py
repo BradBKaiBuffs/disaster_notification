@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'notification',
     'rest_framework',
     'django_celery_results',
+    'dj_redis_panel',
 ]
 
 MIDDLEWARE = [
