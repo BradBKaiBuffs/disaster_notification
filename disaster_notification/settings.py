@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     # add app
     'notification',
     'rest_framework',
-    'dj-redis-panel',
     'dj_redis_panel',
 ]
 
