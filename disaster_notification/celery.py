@@ -2,7 +2,7 @@ import os
 from celery import Celery
 
 # Celery configuration
-os.environ.setdefault('DJANGO.SETTINGS_MODULE', 'disaster_notification.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'disaster_notification.settings')
 
 # set app
 app = Celery('disaster_notification')
