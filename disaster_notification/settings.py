@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     # add app
     'notification',
     'rest_framework',
-    'dj_redis_panel',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -84,8 +84,8 @@ WSGI_APPLICATION = 'disaster_notification.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-# PostgreSQL in Railway configuration
 
+# PostgreSQL in Railway configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # fallback to sqlite if/else statement
@@ -110,51 +110,17 @@ else:
     }
 
 # Celery/Redis configuration
-CELERY_BROKER_URL = os.environ.get('REDIS_URL')
+CELERY_BROKER_URL = os.environ.get('RABBITMQ_URL')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-
+CELERY_RESULT_BACKEND = 'django-db'
 # Celery beat schedule
 CELERY_BEAT_SCHEDULE = {
     'grab-noaa-alerts-every-10-mins': {
         'task': 'notification.tasks.grab_noaa_alerts',
         'schedule': crontab(minute='*/10')
     },
-}
-
-# set variables for Redis information
-RAILWAY_REDIS_HOST = os.environ.get('REDISHOST')
-RAILWAY_REDIS_PORT = int(os.environ.get('REDISPORT', 6379))
-RAILWAY_REDIS_PASSWORD = os.environ.get('REDISPASSWORD')
-
-REDIS_URL = os.environ.get('REDIS_URL')
-
-# troubleshooting redis disconnection
-if not RAILWAY_REDIS_HOST and REDIS_URL:
-    try:
-        url = urlparse(REDIS_URL)
-        # overwrite if successful
-        RAILWAY_REDIS_HOST = url.hostname
-        RAILWAY_REDIS_PORT = url.port
-        RAILWAY_REDIS_PASSWORD = url.password
-    except Exception as e:
-        print(f"REDIS_URL for Redis panel not working: {e}")
-        pass
-
-# Admin Redis Panel configuration
-DJ_REDIS_PANEL_SETTINGS = {
-        "ALLOW_KEY_DELETE": False,
-        "ALLOW_KEY_EDIT": True,
-        "ALLOW_TTL_UPDATE": True,
-
-        "INSTANCES": {
-            "default": {
-                "host": RAILWAY_REDIS_HOST,
-                "port": RAILWAY_REDIS_PORT,
-                "password": RAILWAY_REDIS_PASSWORD if RAILWAY_REDIS_PASSWORD else None,
-                },
-            },
 }
 
 # Password validation
