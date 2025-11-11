@@ -19,6 +19,7 @@ from django.urls import path
 from django.urls import path, include
 
 urlpatterns = [
+    path('admin/redis/', include('dj_redis_panel.urls')),
     path('admin/', admin.site.urls),
     path('', include('notification.urls')),
 ]        
