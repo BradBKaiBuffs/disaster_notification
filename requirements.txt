@@ -11,6 +11,7 @@ click-repl==0.3.0
 colorama==0.4.6
 dj-database-url==3.0.1
 Django==5.2.8
+djangorestframework==3.16.1
 gunicorn==23.0.0
 idna==3.11
 kombu==5.5.4
