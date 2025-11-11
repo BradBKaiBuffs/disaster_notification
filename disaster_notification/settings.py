@@ -124,9 +124,9 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # set variables for Redis information
-RAILWAY_REDIS_HOST = os.environ.get('REDIS_HOST')
-RAILWAY_REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
-RAILWAY_REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+RAILWAY_REDIS_HOST = os.environ.get('REDISHOST')
+RAILWAY_REDIS_PORT = int(os.environ.get('REDISPORT', 6379))
+RAILWAY_REDIS_PASSWORD = os.environ.get('REDISPASSWORD')
 
 REDIS_URL = os.environ.get('REDIS_URL')
 
