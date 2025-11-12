@@ -21,4 +21,4 @@ def dashboard(request):
     context = {
         'alerts': alerts
     }
-    return render(request, 'notfication/dashboard.html', context)
+    return render(request, 'notification/dashboard.html', context)
