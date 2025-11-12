@@ -1,15 +1,15 @@
 from django.shortcuts import render
 from .models import noaa_alerts
-from django.utils.timezone import now
+from django.contrib.auth.decorators import login_required
 
-# Create your views here.
+@login_required
 def dashboard(request):
-    alerts = noaa_alerts.objects.filter(expires__gt=now())
+    alerts = noaa_alerts.objects.all()
 
-    # Get filter parameters from GET request
-    area = request.GET.get('area')
-    severity = request.GET.get('severity')
-    urgency = request.GET.get('urgency')
+    # Optional: filter by GET parameters
+    area = request.GET.get('area', '').strip()
+    severity = request.GET.get('severity', '').strip()
+    urgency = request.GET.get('urgency', '').strip()
 
     if area:
         alerts = alerts.filter(area_desc__icontains=area)
@@ -18,6 +18,7 @@ def dashboard(request):
     if urgency:
         alerts = alerts.filter(urgency__iexact=urgency)
 
-    alerts = alerts.order_by('-sent')  # newest first
-
-    return render(request, 'dashboard.html', {'alerts': alerts})
+    context = {
+        'alerts': alerts
+    }
+    return render(request, 'notfication/dashboard.html', context)
