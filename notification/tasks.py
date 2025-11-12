@@ -38,7 +38,7 @@ def grab_noaa_alerts():
         
         # check for bad response
         response.raise_for_status()
-        
+
         data = response.json()
         # using API structure naming convention and creating a dictionary for model
         features = data.get('features', [])
@@ -47,35 +47,35 @@ def grab_noaa_alerts():
         alerts_created = 0
         
         for feature in features:
-            property = feature.get('properties', {})
-            alert_id = property.get('id')
+            props = feature.get('properties', {})
+            alert_id = props.get('id')
 
             if not alert_id:
                 continue
             defaults_for_model = {
-                    'geometry': feature.get('geometry'),
-                    'area_desc': property.get('areaDesc', ''),
-                    'geocode': property.get('geocode', {}),
-                    'affected_zones': property.get('affectedZones', []),
-                    'sent': sort_datetime(property.get('sent')),
-                    'effective': sort_datetime(property.get('effective')),
-                    'onset': sort_datetime(property.get('onset')),
-                    'expires': sort_datetime(property.get('expires')),
-                    'ends': sort_datetime(property.get('ends')),
-                    'status': property.get('status', ''),
-                    'message_type': property.get('messageType', ''),
-                    'category': property.get('category', ''),
-                    'severity': property.get('severity', ''),
-                    'certainty': property.get('certainty', ''),
-                    'urgency': property.get('urgency', ''),
-                    'event': property.get('event', ''),
-                    'sender_name': property.get('senderName', ''),
-                    'headline': property.get('headline', ''),
-                    'description': property.get('description', ''),
-                    'instruction': property.get('instruction', ''),
-                    'response': property.get('response', ''),
-                    'parameters': property.get('parameters', {}),
-                }
+                "geometry": feature.get("geometry") or {},
+                "area_desc": props.get("areaDesc", ""),
+                "geocode": props.get("geocode", {}),
+                "affected_zones": props.get("affectedZones", []),
+                "sent": sort_datetime(props.get("sent")),
+                "effective": sort_datetime(props.get("effective")),
+                "onset": sort_datetime(props.get("onset")),
+                "expires": sort_datetime(props.get("expires")),
+                "ends": sort_datetime(props.get("ends")),
+                "status": props.get("status", ""),
+                "message_type": props.get("messageType", ""),
+                "category": props.get("category", ""),
+                "severity": props.get("severity", ""),
+                "certainty": props.get("certainty", ""),
+                "urgency": props.get("urgency", ""),
+                "event": props.get("event", ""),
+                "sender_name": props.get("senderName", ""),
+                "headline": props.get("headline") or "",
+                "description": props.get("description") or "",
+                "instruction": props.get("instruction") or "",
+                "response": props.get("response") or "",
+                "parameters": props.get("parameters", {}),
+            }
             
             # prevent duplicate entries
             obj, created = noaa_alerts.objects.update_or_create(
@@ -87,8 +87,8 @@ def grab_noaa_alerts():
             if created:
                 alerts_created += 1
             
-            # message for logs
-            return f"Processed: {alerts_processed}, Created: {alerts_created}"
+        # message for logs
+        return f"Processed: {alerts_processed}, Created: {alerts_created}"
 
     # message to tell me if a failure happens
     except requests.RequestException as e:

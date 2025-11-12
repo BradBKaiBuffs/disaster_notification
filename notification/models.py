@@ -13,7 +13,7 @@ class noaa_alerts(models.Model):
 
     response = models.CharField(max_length=50, null=True, blank=True)
     affected_zones = models.JSONField(default=list)
-    geometry = models.JSONField(default=dict)
+    geometry = models.JSONField(default=dict, null=True, blank=True)
 
     # message info
     status = models.CharField(max_length=50)
