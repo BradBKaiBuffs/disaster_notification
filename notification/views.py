@@ -15,4 +15,4 @@ def dashboard(request):
     context = {
         'alerts': active_alerts
     }
-    return render(request, 'notification/dashboard.html', context)
+    return render(request, 'dashboard.html', context)
