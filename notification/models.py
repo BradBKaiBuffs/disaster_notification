@@ -11,6 +11,10 @@ class noaa_alerts(models.Model):
     description = models.TextField()
     instruction = models.TextField(null=True, blank=True)
 
+    response = models.CharField(max_length=50, null=True, blank=True)
+    affected_zones = models.JSONField(default=list)
+    geometry = models.JSONField(default=dict)
+
     # message info
     status = models.CharField(max_length=50)
     message_type = models.CharField(max_length=50)
@@ -27,7 +31,7 @@ class noaa_alerts(models.Model):
     onset = models.DateTimeField(null=True, blank=True)
     expires = models.DateTimeField(null=True, blank=True)
     ends = models.DateTimeField(null=True, blank=True)
-    
+
     # sender Info
     sender_name = models.CharField(
         max_length=255, 
