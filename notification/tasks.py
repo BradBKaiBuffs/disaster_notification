@@ -36,6 +36,9 @@ def grab_noaa_alerts():
         }
         response = requests.get(API_URL, headers=headers)
         
+        # check for bad response
+        response.raise_for_status()
+        
         data = response.json()
         # using API structure naming convention and creating a dictionary for model
         features = data.get('features', [])
@@ -77,7 +80,7 @@ def grab_noaa_alerts():
             # prevent duplicate entries
             obj, created = noaa_alerts.objects.update_or_create(
                 id=alert_id,
-                default=defaults_for_model
+                defaults=defaults_for_model
             )
 
             alerts_processed += 1
