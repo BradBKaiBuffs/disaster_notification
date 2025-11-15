@@ -45,35 +45,6 @@ class noaa_alerts(models.Model):
 
     from django.contrib.auth.models import User
 
-class user_area_subscription(models.Model):
-    NOTIFY_CHOICES = [
-        ('new', 'Notify on New Alert'),
-        ('update', 'Notify on Update'),
-        ('expires', 'Notify Before Expiry'),
-        ('all', 'All notification options'),
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    area = models.CharField(max_length=255)
-    phone_number = models.CharField(max_length=20)
-    notification_type = models.CharField(
-        max_length=50,
-        choices=NOTIFY_CHOICES,
-        default='new'
-    )
-
-    def __str__(self):
-        return f"{self.user.username} -> {self.area}"
-
-
-class alert_notification_tracking(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    alert = models.ForeignKey(noaa_alerts, on_delete=models.CASCADE)
-    sent_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.user.username} -> {self.alert.id}"
-
 # this model stores what area a user wants to follow for alerts
 # these rows let the system know how to message each person
 class user_area_subscription(models.Model):
@@ -117,6 +88,6 @@ class alert_notification_tracking(models.Model):
     # this saves the date and time the alert was sent out
     sent_at = models.DateTimeField(auto_now_add=True)
 
-    # this helps the admin page show meaningful text
+    # shows readable label when looking at the info
     def __str__(self):
         return f"{self.user.username} -> {self.alert.id}"
