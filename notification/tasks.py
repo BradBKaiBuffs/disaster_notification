@@ -90,7 +90,7 @@ def grab_noaa_alerts():
         # message for logs
         return f"Processed: {alerts_processed}, Created: {alerts_created}"
 
-    # message to tell me if a failure happens
+    # states if error happened
     except requests.RequestException as e:
         return f"Error in data handling: {e}"
     except Exception as e:
