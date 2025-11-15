@@ -15,7 +15,7 @@ def dashboard(request):
 
     # with no filters applied, just shows 5 most recent alerts
     if not any_filter:
-        alerts = noaa_alerts.objects.exclude(event_icontains='test').order_by('-sent')[:5]
+        alerts = noaa_alerts.objects.exclude(event__icontains='test').order_by('-sent')[:5]
     else:
 
         # area filter
