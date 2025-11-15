@@ -10,17 +10,25 @@ def dashboard(request):
     severity = request.GET.get('severity', '').strip()
     urgency = request.GET.get('urgency', '').strip()
 
-    # this filters by area match and ignores case
-    if area:
-        alerts = alerts.filter(area_desc__icontains=area)
+    # this checks if any filter is being used
+    any_filter = area or severity or urgency
 
-    # this filters by severity if the user selected one
-    if severity:
-        alerts = alerts.filter(severity__iexact=severity)
+    # with no filters applied, just shows 5 most recent alerts
+    if not any_filter:
+        alerts = noaa_alerts.objects.exclude(event_icontains='test').order_by('-sent')[:5]
+    else:
 
-    # this filters by urgency when picked
-    if urgency:
-        alerts = alerts.filter(urgency__iexact=urgency)
+        # area filter
+        if area:
+            alerts = alerts.filter(area_desc__icontains=area)
+
+        # severity filter
+        if severity:
+            alerts = alerts.filter(severity__iexact=severity)
+
+        # urgency filter
+        if urgency:
+            alerts = alerts.filter(urgency__iexact=urgency)
 
     # this sends the filtered alerts to the page
     context = {
