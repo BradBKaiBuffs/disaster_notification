@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 class noaa_alerts(models.Model):
@@ -41,3 +42,81 @@ class noaa_alerts(models.Model):
     # JSON Fields for nested/variable data
     geocode = models.JSONField(default=dict)
     parameters = models.JSONField(default=dict)
+
+    from django.contrib.auth.models import User
+
+class user_area_subscription(models.Model):
+    NOTIFY_CHOICES = [
+        ('new', 'Notify on New Alert'),
+        ('update', 'Notify on Update'),
+        ('expires', 'Notify Before Expiry'),
+        ('all', 'All notification options'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    area = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=20)
+    notification_type = models.CharField(
+        max_length=50,
+        choices=NOTIFY_CHOICES,
+        default='new'
+    )
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.area}"
+
+
+class alert_notification_tracking(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    alert = models.ForeignKey(noaa_alerts, on_delete=models.CASCADE)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.alert.id}"
+
+# this model stores what area a user wants to follow for alerts
+# these rows let the system know how to message each person
+class user_area_subscription(models.Model):
+    # this holds the notification choices that the user can pick
+    NOTIFY_CHOICES = [
+        ('new', 'Notify on New Alert'),
+        ('update', 'Notify on Update'),
+        ('expires', 'Notify Before Expiry'),
+        ('all', 'All notification options'),
+    ]
+
+    # this links each subscription to a real user account
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # this stores the area text the user typed in
+    area = models.CharField(max_length=255)
+
+    # this keeps the phone number for sending sms alerts later
+    phone_number = models.CharField(max_length=20)
+
+    # this saves what notification type the user wants
+    notification_type = models.CharField(
+        max_length=50,
+        choices=NOTIFY_CHOICES,
+        default='new'
+    )
+
+    # this shows a readable label when looking at this model
+    def __str__(self):
+        return f"{self.user.username} -> {self.area}"
+
+
+# this model tracks what alerts were already sent so we wont send the same one again
+class alert_notification_tracking(models.Model):
+    # this links to the user who got the alert
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # this links to the noaa alert that was delivered
+    alert = models.ForeignKey(noaa_alerts, on_delete=models.CASCADE)
+
+    # this saves the date and time the alert was sent out
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    # this helps the admin page show meaningful text
+    def __str__(self):
+        return f"{self.user.username} -> {self.alert.id}"
