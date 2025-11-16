@@ -45,10 +45,10 @@ class noaa_alerts(models.Model):
 
     from django.contrib.auth.models import User
 
-# this model stores what area a user wants to follow for alerts
+# stores what area a user wants to follow for alerts
 # these rows let the system know how to message each person
 class user_area_subscription(models.Model):
-    # this holds the notification choices that the user can pick
+    # holds the notification choices that the user can pick
     NOTIFY_CHOICES = [
         ('new', 'Notify on New Alert'),
         ('update', 'Notify on Update'),
@@ -56,36 +56,38 @@ class user_area_subscription(models.Model):
         ('all', 'All notification options'),
     ]
 
-    # this links each subscription to a real user account
+    # links each subscription to a real user account
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    # this stores the area text the user typed in
+    # stores the area tex
     area = models.CharField(max_length=255)
 
-    # this keeps the phone number for sending sms alerts later
+    # keeps the phone number for sending sms alerts later
     phone_number = models.CharField(max_length=20)
 
-    # this saves what notification type the user wants
+    # saves what notification type the user wants
     notification_type = models.CharField(
         max_length=50,
         choices=NOTIFY_CHOICES,
         default='new'
     )
+    # timestamp when created
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    # this shows a readable label when looking at this model
+    # shows a readable label when looking at this model
     def __str__(self):
         return f"{self.user.username} -> {self.area}"
 
 
-# this model tracks what alerts were already sent so we wont send the same one again
+# model tracks what alerts were already sent so we wont send the same one again
 class alert_notification_tracking(models.Model):
-    # this links to the user who got the alert
+    # links to the user who got the alert
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    # this links to the noaa alert that was delivered
+    # links to the noaa alert that was delivered
     alert = models.ForeignKey(noaa_alerts, on_delete=models.CASCADE)
 
-    # this saves the date and time the alert was sent out
+    # saves the date and time the alert was sent out
     sent_at = models.DateTimeField(auto_now_add=True)
 
     # shows readable label when looking at the info

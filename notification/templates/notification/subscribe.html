@@ -1,23 +1,90 @@
 {% extends "notification/base.html" %}
-
 {% block content %}
 
 <div class="container mt-4">
 
-    <!-- title -->
-    <h2 class="mb-3">Manage Alert Subscription</h2>
+    <h2 class="mb-3">Alert Subscription</h2>
 
-    <!-- this form shows areas and phone number fields -->
-    <form method="POST" class="card p-4 shadow-sm">
-        {% csrf_token %}
+    {% if not user.is_authenticated %}
 
-        <!-- this prints all fields with bootstrap styling -->
-        {{ form.as_p }}
+        <!-- message so visitor knows they are making account and alerts together -->
+        <div class="alert alert-info">
+            Create an account and set alerts here
+        </div>
 
-        <button class="btn btn-primary mt-2">Save Subscription</button>
+        <form method="POST" class="card p-4 shadow">
+            {% csrf_token %}
 
-    </form>
+            <!-- username email and password section -->
+            <h5 class="mb-2">Account Info</h5>
+            {{ user_form.as_p }}
 
+            <hr>
+
+            <!-- alert settings fields -->
+            <h5 class="mt-3">Alert Settings</h5>
+
+            <!-- area field -->
+            <label class="form-label">Alert Area</label>
+            <input type="text"
+                   name="area"
+                   class="form-control"
+                   placeholder="Start typing area name"
+                   list="area-list">
+
+            <datalist id="area-list">
+                {% for a in areas %}
+                    <option value="{{ a }}"></option>
+                {% endfor %}
+            </datalist>
+
+            <!-- phone number field -->
+            <label class="form-label mt-3">Phone Number</label>
+            {{ sub_form.phone_number }}
+
+            <!-- notification type field -->
+            <label class="form-label mt-3">Notification Type</label>
+            {{ sub_form.notification_type }}
+
+            <button class="btn btn-success mt-3">Register and save alerts</button>
+        </form>
+
+    {% else %}
+
+        <!-- logged in message -->
+        <div class="alert alert-success">
+            Logged in as <strong>{{ user.username }}</strong>
+        </div>
+
+        <form method="POST" class="card p-4 shadow">
+            {% csrf_token %}
+
+            <!-- area field -->
+            <label class="form-label">Alert Area</label>
+            <input type="text"
+                   name="area"
+                   class="form-control"
+                   placeholder="Start typing area name"
+                   list="area-list">
+
+            <datalist id="area-list">
+                {% for a in areas %}
+                    <option value="{{ a }}"></option>
+                {% endfor %}
+            </datalist>
+
+            <!-- phone number field -->
+            <label class="form-label mt-3">Phone Number</label>
+            {{ sub_form.phone_number }}
+
+            <!-- notification field -->
+            <label class="form-label mt-3">Notification Type</label>
+            {{ sub_form.notification_type }}
+
+            <button class="btn btn-primary mt-3">Save subscription</button>
+        </form>
+
+    {% endif %}
 </div>
 
 {% endblock %}

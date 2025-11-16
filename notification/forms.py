@@ -1,10 +1,12 @@
 from django import forms
 from .models import user_area_subscription
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
-# this form lets users create or update their alert preferences
+# ets users create or update their alert preferences
 class user_area_subscription_form(forms.ModelForm):
 
-    # this meta class tells django which model the form is based on
+    # tells django which model the form is based on
     class Meta:
         model = user_area_subscription
 
@@ -15,7 +17,7 @@ class user_area_subscription_form(forms.ModelForm):
         widgets = {
             'area': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'enter area name'
+                'placeholder': 'type area name',
             }),
             'phone_number': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -25,3 +27,12 @@ class user_area_subscription_form(forms.ModelForm):
                 'class': 'form-control'
             }),
         }
+# user creation form
+# uses Django for account registration and security
+class user_registration_form(UserCreationForm):
+    # email
+    email = forms.EmailField(required=True)
+    # grabs username, email and password creation
+    class Meta:
+        model = User
+        fields = ["username", "email", "password1", "password2"]
