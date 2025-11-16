@@ -44,6 +44,11 @@ from .forms import user_area_subscription_form
 
 # view lets a user create or update their alert subscription
 def subscribe(request):
+
+    # template breaks if not stated
+    user_form = None
+    sub_form = None
+
     # load areas
     areas = (
         noaa_alerts.objects
