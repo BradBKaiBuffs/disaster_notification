@@ -35,3 +35,23 @@ def dashboard(request):
         'alerts': alerts
     }
     return render(request, 'notification/dashboard.html', context)
+
+from .forms import user_area_subscription_form
+
+# this view lets a user create or update their alert subscription
+def subscribe(request):
+    # this checks if form was submitted
+    if request.method == "POST":
+        form = user_area_subscription_form(request.POST)
+
+        # this saves the form if everything looks ok
+        if form.is_valid():
+            form.save()
+            # this redirects user back after save
+            return render(request, "notification/subscribe_success.html")
+    else:
+        # this makes an empty form for user to fill
+        form = user_area_subscription_form()
+
+    # this sends the form to the html page
+    return render(request, "notification/subscribe.html", {"form": form})

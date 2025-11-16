@@ -15,6 +15,8 @@ from pathlib import Path
 import dj_database_url
 from urllib.parse import urlparse
 from celery.schedules import crontab
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -69,7 +71,8 @@ ROOT_URLCONF = 'disaster_notification.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # override built-in admin templates
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

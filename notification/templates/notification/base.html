@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Weather Notifications Landing Page</title>
+    <title>Weather Notifications Page</title>
 
     <!-- bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,10 +15,40 @@
 <nav class="navbar navbar-dark bg-dark mb-4">
     <div class="container-fluid">
         <!-- title -->
-        <span class="navbar-brand">Weather Notifications Landing Page</span>
+        <span class="navbar-brand">Weather Notifications Page</span>
+        <div class="d-flex">
+
+            <!-- link to dashboard page -->
+            <a href="{% url 'dashboard' %}"
+               class="btn btn-primary btn-sm me-2">
+                Dashboard
+            </a>
+
+            <!-- link to subscription form page -->
+            <a href="{% url 'subscribe' %}"
+               class="btn btn-primary btn-sm me-2">
+                Subscribe
+            </a>
+
+            <!-- this part switches based on user login status -->
+            {% if user.is_authenticated %}
+
+                <!-- logout must be post or django rejects it -->
+                <form method="POST" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button class="btn btn-primary btn-sm me-2">Logout</button>
+                </form>
+
+                <a href="/admin/" class="btn btn-primary btn-sm me-2">Admin</a>
+
+            {% else %}
+
+                <a href="{% url 'login' %}" class="btn btn-success btn-sm">Login</a>
+
+            {% endif %}
+        </div>
     </div>
 </nav>
-
 <main class="container">
     <!-- block used for different pages -->
     {% block content %}

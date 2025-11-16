@@ -1,0 +1,23 @@
+{% extends "notification/base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- title -->
+    <h2 class="mb-3">Manage Alert Subscription</h2>
+
+    <!-- this form shows areas and phone number fields -->
+    <form method="POST" class="card p-4 shadow-sm">
+        {% csrf_token %}
+
+        <!-- this prints all fields with bootstrap styling -->
+        {{ form.as_p }}
+
+        <button class="btn btn-primary mt-2">Save Subscription</button>
+
+    </form>
+
+</div>
+
+{% endblock %}
