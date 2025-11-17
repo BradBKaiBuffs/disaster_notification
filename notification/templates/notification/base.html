@@ -30,6 +30,12 @@
                 Subscribe
             </a>
 
+            <!-- link to personal user alert page -->
+            <a href="{% url 'user_alerts' %}"
+               class="btn btn-primary btn-sm me-2">
+                User Alerts Page
+            </a>
+
             <!-- this part switches based on user login status -->
             {% if user.is_authenticated %}
 

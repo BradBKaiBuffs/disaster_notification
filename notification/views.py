@@ -1,13 +1,17 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from .models import noaa_alerts, user_area_subscription
 from .forms import user_area_subscription_form, user_registration_form
 from django.db.models import Count
 import json
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
 # view shows recent alerts and keeps out test ones
 def dashboard(request):
-    alerts = noaa_alerts.objects.exclude(event__icontains='test').order_by('-sent')
+
+    # build base queryset only once (do NOT order here yet)
+    alerts = noaa_alerts.objects.exclude(event__icontains='test')
 
     # pulls filter text if the user typed something in the filter boxes
     area = request.GET.get('area', '').strip()
@@ -17,10 +21,8 @@ def dashboard(request):
     # checks if any filter is being used
     any_filter = area or severity or urgency
 
-    # no filters applied just shows 5 most recent alerts
-    if not any_filter:
-        alerts = noaa_alerts.objects.exclude(event__icontains='test').order_by('-sent')[:5]
-    else:
+    # apply filters ONLY if user typed something
+    if any_filter:
 
         # area filter
         if area:
@@ -34,13 +36,19 @@ def dashboard(request):
         if urgency:
             alerts = alerts.filter(urgency__iexact=urgency)
 
+        # NOW it is safe to order and slice
+        alerts = alerts.order_by('-sent')[:50]
+
+    else:
+        # no filter → return 5 newest alerts
+        alerts = alerts.order_by('-sent')[:5]
+
     # sends the filtered alerts to the page
     context = {
         'alerts': alerts
     }
     return render(request, 'notification/dashboard.html', context)
 
-from .forms import user_area_subscription_form
 
 # view lets a user create or update their alert subscription
 def subscribe(request):
@@ -129,61 +137,69 @@ def subscribe(request):
         },
     )
 
+@login_required
+# dedicated user alert page
 def user_alerts(request):
-    #  grabs all subscriptions that belong to the logged in user
+
+    # get only this user's saved subscriptions
     subscriptions = user_area_subscription.objects.filter(user=request.user)
 
-    # gets the area choice from url query or uses first sub if none
+    # picks which area is being viewed on the page
     selected_area = request.GET.get("area", "").strip()
+
+    # auto set a default area if user didn’t choose one yet
     if not selected_area and subscriptions.exists():
         selected_area = subscriptions.first().area
 
-    # excludes test alert messages
-    alerts = noaa_alerts.objects.exclude(event__icontains="test")
+    # pull full alert queryset and remove test alerts
+    alerts_qs = noaa_alerts.objects.exclude(event__icontains="test")
 
-    # filters alerts if an area is selected
+    # filter alerts if user selected an area
     if selected_area:
-        alerts = alerts.filter(area_desc__icontains=selected_area)
+        alerts_qs = alerts_qs.filter(area_desc__icontains=selected_area)
 
-    # sorts newest first and keeps table readable
-    alerts = alerts.order_by("-sent")[:50]
+    # ordering ALWAYS before slicing to avoid django error
+    alerts = alerts_qs.order_by("-sent")[:50]
 
-    # creates severity counts so we can build the bar chart
+    # severity counter (for charts)
     severity_counts = (
-        alerts.values("severity")
-        .annotate(count=Count("severity"))
-        .order_by("-count")
+        alerts_qs.values("severity")   # ⚠ NO SLICE HERE
+                 .annotate(count=Count("severity"))
+                 .order_by("-count")
     )
 
-    # splits the severity data into two lists
-    severity_labels = [item["severity"] for item in severity_counts]
-    severity_values = [item["count"] for item in severity_counts]
+    # split into lists for javascript charts
+    severity_labels = [row["severity"] for row in severity_counts]
+    severity_values = [row["count"] for row in severity_counts]
 
-    # handles the form when user adds new subscripton info
+    # handle submitted subscription form
     if request.method == "POST":
         form = user_area_subscription_form(request.POST)
-
-        # connects the saved sub to the correct user
         if form.is_valid():
+            # assign owner
             sub = form.save(commit=False)
             sub.user = request.user
             sub.save()
-
-            # user back to the same page after saving
+            messages.success(request, "subscription added")
             return redirect("user_alerts")
-
-    # loads an empty form if page is first loaded
     else:
         form = user_area_subscription_form()
 
-    # builds all values
-    context = {
-        "form": form,
+    # send everything to page
+    return render(request, "notification/user_alerts.html", {
         "subscriptions": subscriptions,
-        "alerts": alerts,
         "selected_area": selected_area,
+        "alerts": alerts,
+        "form": form,
         "severity_labels": json.dumps(severity_labels),
         "severity_values": json.dumps(severity_values),
-    }
+    })
 
-    return render(request, "notification/user_alerts.html", context)
+@login_required
+# delete subscription
+def delete_subscription(request, sub_id):
+    # finds sub matching id owned by user and if not found throws a 404 error
+    sub = get_object_or_404(user_area_subscription, id=sub_id, user=request.user)
+    sub.delete()
+    messages.warning(request, "Subscription removed.")
+    return redirect("user_alerts")
