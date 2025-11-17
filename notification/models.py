@@ -100,4 +100,11 @@ class storm_event(models.Model):
     event_type = models.CharField(max_length=100)
     state = models.CharField(max_length=50)
     county = models.CharField(max_length=100)
-    # Need a begin_date and end_date 
+    # manually split fields through cleaning before imported
+    begin_year = models.IntegerField()
+    begin_month = models.IntegerField()
+    end_year = models.IntegerField()
+    end_month = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.event_type} in {self.state} ({self.year})"
