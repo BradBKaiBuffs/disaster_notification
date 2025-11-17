@@ -79,7 +79,7 @@ class user_area_subscription(models.Model):
         return f"{self.user.username} -> {self.area}"
 
 
-# model tracks what alerts were already sent so we wont send the same one again
+# tracks what alerts were already sent so we wont send the same one again
 class alert_notification_tracking(models.Model):
     # links to the user who got the alert
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -93,3 +93,11 @@ class alert_notification_tracking(models.Model):
     # shows readable label when looking at the info
     def __str__(self):
         return f"{self.user.username} -> {self.alert.id}"
+
+# storm events csv
+class storm_event(models.Model):
+    event_id = models.CharField(primary_key=True, max_length=50)
+    event_type = models.CharField(max_length=100)
+    state = models.CharField(max_length=50)
+    county = models.CharField(max_length=100)
+    # Need a begin_date and end_date 

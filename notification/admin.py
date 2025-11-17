@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import noaa_alerts, user_area_subscription, alert_notification_tracking
+from .models import noaa_alerts, user_area_subscription, alert_notification_tracking, storm_event
+from import_export.admin import ImportExportModelAdmin
 
 # shows important alert fields when browsing in the admin page
 @admin.register(noaa_alerts)
@@ -32,3 +33,8 @@ class alert_notification_tracking_admin(admin.ModelAdmin):
 
     # helps filter entries by user
     list_filter = ('user',)
+
+# allows uploading of csv for storm events
+@admin.register(storm_event)
+class storm_event_admin(ImportExportModelAdmin):
+    pass

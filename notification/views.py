@@ -141,10 +141,10 @@ def subscribe(request):
 # dedicated user alert page
 def user_alerts(request):
 
-    # get only this user's saved subscriptions
+    # get only user's saved subscriptions
     subscriptions = user_area_subscription.objects.filter(user=request.user)
 
-    # picks which area is being viewed on the page
+    # picks which area is being viewed
     selected_area = request.GET.get("area", "").strip()
 
     # auto set a default area if user didn’t choose one yet
@@ -158,10 +158,10 @@ def user_alerts(request):
     if selected_area:
         alerts_qs = alerts_qs.filter(area_desc__icontains=selected_area)
 
-    # ordering ALWAYS before slicing to avoid django error
+    # ordering before slicing to avoid django error I kept getting
     alerts = alerts_qs.order_by("-sent")[:50]
 
-    # severity counter (for charts)
+    # severity counter
     severity_counts = (
         alerts_qs.values("severity")   # ⚠ NO SLICE HERE
                  .annotate(count=Count("severity"))

@@ -40,18 +40,20 @@ CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://disasternotification-p
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # add app
+    # added non-default apps
     'notification',
     'rest_framework',
     'django_celery_results',
     'django_celery_beat',
     'dj_redis_panel',
+    'import_export',
 ]
 
 MIDDLEWARE = [
@@ -62,7 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # add middleware
+    # added non-default middleware
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
@@ -155,6 +157,14 @@ DJ_REDIS_PANEL_SETTINGS = {
         },
     }
 }
+# Sendgrid configuration
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST_USER = 'apikey' # this is exactly the value 'apikey'
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
