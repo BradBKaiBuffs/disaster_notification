@@ -166,6 +166,17 @@ EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
+JAZZMIN_SETTINGS = {
+    "site_title": "Weather Notifications Admin",
+
+    "topmenu_links": [
+        # links
+        {"name": "Admin Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Dashboard", "url": "/", "icon": "fas fa-chart-line"},
+        {"name": "Upload CSV", "url": "/upload_csv/", "icon": "fas fa-file-upload"},
+    ],
+}
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

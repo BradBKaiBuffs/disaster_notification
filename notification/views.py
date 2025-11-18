@@ -10,6 +10,7 @@ from .models import NoaaAlert, UserAreaSubscription
 from .forms import UserAreaSubscriptionForm, UserRegistrationForm, CsvUploadForm
 from django.http import HttpResponseForbidden
 from django.contrib.admin.views.decorators import staff_member_required
+from django.conf import settings
 
 
 # dashboard view
