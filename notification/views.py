@@ -8,6 +8,8 @@ from django.contrib import messages
 from django.db.models import Count
 from .models import NoaaAlert, UserAreaSubscription
 from .forms import UserAreaSubscriptionForm, UserRegistrationForm, CsvUploadForm
+from django.http import HttpResponseForbidden
+from django.contrib.admin.views.decorators import staff_member_required
 
 
 # dashboard view
@@ -205,8 +207,15 @@ def delete_subscription_view(request, sub_id):
 UPLOAD_DIR = "/tmp/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# only admin can access
+@staff_member_required
 # upload csv view
 def upload_csv_view(request):
+
+    # only admin can upload csv
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Only admin has access to this page.")
+
     message = None
     if request.method == 'POST':
         form = CsvUploadForm(request.POST, request.FILES)

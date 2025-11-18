@@ -1,22 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload Storm Event CSV</title>
-</head>
-<body>
+{% extends "notification/base.html" %}
 
-<h2>Upload Storm Event CSV</h2>
+{% block content %}
 
-{% if msg %}
-    <p><strong>{{ msg }}</strong></p>
-{% endif %}
+<h2>CSV Upload (Admin only)</h2>
+
+{# show warning if user is not staff #}
+{% if not request.user.is_staff %}
+    <p style="color:red;">You do not have permission to upload files.</p>
+{% else %}
 
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form }}
-    <br><br>
-    <button type="submit">Upload and Import</button>
+    {{ form.file }}
+    <button type="submit">Upload</button>
 </form>
 
-</body>
-</html>
+{% if message %}
+    <p>{{ message }}</p>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
