@@ -196,19 +196,23 @@ def user_alerts_view(request):
 @login_required
 # delete subscription
 def delete_subscription_view(request, sub_id):
+
     # finds sub matching id owned by user and if not found throws a 404 error
     sub = get_object_or_404(UserAreaSubscription, id=sub_id, user=request.user)
     sub.delete()
+
     messages.warning(request, "Subscription removed.")
+
     return redirect("user_alerts")
 
 
 # directory where uploaded files are saved temporarily
-UPLOAD_DIR = "/tmp/uploads"
+UPLOAD_DIR = os.path.join(settings.BASE_DIR, "uploaded_files")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # only admin can access
 @staff_member_required
+
 # upload csv view
 def upload_csv_view(request):
 
@@ -217,20 +221,31 @@ def upload_csv_view(request):
         return HttpResponseForbidden("Only admin has access to this page.")
 
     message = None
+
     if request.method == 'POST':
+
         form = CsvUploadForm(request.POST, request.FILES)
+        # check
         if form.is_valid():
+
             upload_file = form.cleaned_data["file"]
+
             save_path = os.path.join(UPLOAD_DIR, upload_file.name)
+
             # write file to disk in chunks
             with open(save_path, "wb+") as destination:
                 for chunk in upload_file.chunks():
                     destination.write(chunk)
+
             # trigger separate process to import data
             subprocess.Popen([
                 "python", "manage.py", "import_storms", save_path
             ])
+
             message = "CSV uploaded"
+
     else:
+
         form = CsvUploadForm()
+
     return render(request, "notification/upload_csv.html", {"form": form, "message": message})
