@@ -12,6 +12,8 @@ class StormEventResource(resources.ModelResource):
     begin_month = fields.Field(attribute="begin_month", column_name="BEGIN_MONTH")
     end_year = fields.Field(attribute="end_year", column_name="END_YEAR")
     end_month = fields.Field(attribute="end_month", column_name="END_MONTH")
+    begin_time = fields.Field(attribute="begin_time", column_name="BEGIN_TIME")
+    end_time = fields.Field(attribute="end_time", column_name="END_TIME")
 
     class Meta:
         model = StormEvent

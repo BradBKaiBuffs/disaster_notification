@@ -112,11 +112,13 @@ class StormEvent(models.Model):
     state = models.CharField(max_length=50)
     county = models.CharField(max_length=100)
 
-    # manually split fields through cleaning before import
+    # date and time
     begin_year = models.IntegerField(default=1)
     begin_month = models.IntegerField(default=1)
     end_year = models.IntegerField(default=1)
     end_month = models.IntegerField(default=1)
+    begin_time = models.IntegerField(default=1)
+    end_time = models.IntegerField(default=1)
 
     def __str__(self):
         # show event, state, and beginning year for the eye test
