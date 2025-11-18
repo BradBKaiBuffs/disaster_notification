@@ -3,7 +3,6 @@ from .models import StormEvent
 
 # storm event import resource
 # connects csv fields directly into the storm_event model
-# optimized for bulk import over remote postgres
 class StormEventResource(resources.ModelResource):
     event_id = fields.Field(attribute="event_id")
     event_type = fields.Field(attribute="event_type")
@@ -29,6 +28,12 @@ class StormEventResource(resources.ModelResource):
 
         # skip unchanged rows to prevent re-importing same values
         skip_unchanged = True
+
+        # stops idential data from being updated
+        skip_diff = True
+
+        # prints warnings 
+        report_skipped = True
 
         # raise import errors to help debugging during development
         raise_errors = True
