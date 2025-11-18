@@ -4,14 +4,14 @@ from .models import StormEvent
 # storm event import resource
 # connects csv fields directly into the storm_event model
 class StormEventResource(resources.ModelResource):
-    event_id = fields.Field(attribute="event_id")
-    event_type = fields.Field(attribute="event_type")
-    state = fields.Field(attribute="state")
-    county = fields.Field(attribute="county")
-    begin_year = fields.Field(attribute="begin_year")
-    begin_month = fields.Field(attribute="begin_month")
-    end_year = fields.Field(attribute="end_year")
-    end_month = fields.Field(attribute="end_month")
+    event_id = fields.Field(attribute="event_id", column_name="EVENT_ID")
+    event_type = fields.Field(attribute="event_type", column_name="EVENT_TYPE")
+    state = fields.Field(attribute="state", column_name="STATE")
+    county = fields.Field(attribute="county", column_name="CZ_NAME")
+    begin_year = fields.Field(attribute="begin_year", column_name="BEGIN_YEAR")
+    begin_month = fields.Field(attribute="begin_month", column_name="BEGIN_MONTH")
+    end_year = fields.Field(attribute="end_year", column_name="END_YEAR")
+    end_month = fields.Field(attribute="end_month", column_name="END_MONTH")
 
     class Meta:
         model = StormEvent
