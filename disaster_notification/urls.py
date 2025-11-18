@@ -16,10 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from notification.views import upload_csv_view
 
 urlpatterns = [
     path('admin/redis/', include('dj_redis_panel.urls')),
     path('admin/', admin.site.urls),
     path('', include('notification.urls')),
-    path('accounts/', include('django.contrib.auth.urls'))
+    path('accounts/', include('django.contrib.auth.urls')),
+    path("upload_csv", upload_csv_view, name="upload_csv"),
 ]        

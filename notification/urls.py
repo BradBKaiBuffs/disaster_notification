@@ -1,11 +1,11 @@
 from django.urls import path, include
 from . import views
-from .views import dashboard, subscribe, user_alerts, delete_subscription
+from .views import dashboard_view, subscribe_view, user_alerts_view, delete_subscription_view
 
 urlpatterns = [
-    path('', views.dashboard, name='dashboard'),
-    path('subscribe/', subscribe, name='subscribe'),
+    path('', dashboard_view, name='dashboard'),
+    path('subscribe/', subscribe_view, name='subscribe'),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('user_alerts/', views.user_alerts, name="user_alerts"),
-    path('delete_subscription/<int:sub_id>/', delete_subscription, name='delete_subscription'),
+    path('user_alerts/', user_alerts_view, name="user_alerts"),
+    path('delete_subscription/<int:sub_id>/', delete_subscription_view, name='delete_subscription'),
 ]

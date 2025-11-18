@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Storm Event CSV</title>
+</head>
+<body>
+
+<h2>Upload Storm Event CSV</h2>
+
+{% if msg %}
+    <p><strong>{{ msg }}</strong></p>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form }}
+    <br><br>
+    <button type="submit">Upload and Import</button>
+</form>
+
+</body>
+</html>

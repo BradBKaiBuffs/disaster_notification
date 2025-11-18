@@ -1,19 +1,22 @@
+import os
+import json
+import subprocess
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
-from .models import noaa_alerts, user_area_subscription
-from .forms import user_area_subscription_form, user_registration_form
-from django.db.models import Count
-import json
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Count
+from .models import NoaaAlert, UserAreaSubscription
+from .forms import UserAreaSubscriptionForm, UserRegistrationForm, CsvUploadForm
 
-# view shows recent alerts and keeps out test ones
-def dashboard(request):
 
-    # build base queryset only once (do NOT order here yet)
-    alerts = noaa_alerts.objects.exclude(event__icontains='test')
+# dashboard view
+def dashboard_view(request):
 
-    # pulls filter text if the user typed something in the filter boxes
+    # excludes test alerts
+    alerts = NoaaAlert.objects.exclude(event__icontains='test')
+
+    # ff the user typed something in the filter boxes uses that
     area = request.GET.get('area', '').strip()
     severity = request.GET.get('severity', '').strip()
     urgency = request.GET.get('urgency', '').strip()
@@ -21,7 +24,7 @@ def dashboard(request):
     # checks if any filter is being used
     any_filter = area or severity or urgency
 
-    # apply filters ONLY if user typed something
+    # apply filters only if user typed something
     if any_filter:
 
         # area filter
@@ -36,11 +39,11 @@ def dashboard(request):
         if urgency:
             alerts = alerts.filter(urgency__iexact=urgency)
 
-        # NOW it is safe to order and slice
+        # order and slice
         alerts = alerts.order_by('-sent')[:50]
 
     else:
-        # no filter → return 5 newest alerts
+        # if there is no filter then returns 5 newest alerts
         alerts = alerts.order_by('-sent')[:5]
 
     # sends the filtered alerts to the page
@@ -50,8 +53,8 @@ def dashboard(request):
     return render(request, 'notification/dashboard.html', context)
 
 
-# view lets a user create or update their alert subscription
-def subscribe(request):
+# create or update alert subscription
+def subscribe_view(request):
 
     # template breaks if not stated
     user_form = None
@@ -59,7 +62,7 @@ def subscribe(request):
 
     # load areas
     areas = (
-        noaa_alerts.objects
+        NoaaAlert.objects
         .exclude(event__icontains="test")
         .values_list("area_desc", flat=True)
         .distinct()
@@ -69,11 +72,11 @@ def subscribe(request):
     # checks if user already logged in
     if request.user.is_authenticated:
 
-        # handle form submit for extra subscription rows
+        # handle form submission for extra subscription rows
         if request.method == "POST":
-            sub_form = user_area_subscription_form(request.POST)
+            sub_form = UserAreaSubscriptionForm(request.POST)
 
-            # save subscription row tied to current user
+            # save subscription choices tied to current user
             if sub_form.is_valid():
                 subscription = sub_form.save(commit=False)
                 subscription.user = request.user
@@ -82,16 +85,7 @@ def subscribe(request):
 
         # show empty form when page first loads
         else:
-            sub_form = user_area_subscription_form()
-
-        areas = (
-            noaa_alerts.objects
-            .exclude(event__icontains="test")
-            .values_list("area_desc", flat=True)
-            .distinct()
-            .order_by("area_desc")
-        )
-        areas_list = list(areas)
+            sub_form = UserAreaSubscriptionForm()
 
         return render(request, "notification/subscribe.html", {
             # account fields for new user
@@ -103,31 +97,31 @@ def subscribe(request):
         })
 
     if request.method == "POST":
-        user_form = user_registration_form(request.POST)
-        sub_form = user_area_subscription_form(request.POST)
+        user_form = UserRegistrationForm(request.POST)
+        sub_form = UserAreaSubscriptionForm(request.POST)
 
-        # both account and subscription must pass validation
+        # checks if valid
         if user_form.is_valid() and sub_form.is_valid():
             # save user account first
             user = user_form.save()
             login(request, user)
 
-            # now save subscription linked to new user
+            # save subscription linked to new user
             subscription = sub_form.save(commit=False)
             subscription.user = user
             subscription.save()
 
             return redirect("subscribe")
 
-    # first load for non logged visitor
+    # leads if not logged in
     else:
-        user_form = user_registration_form()
-        sub_form = user_area_subscription_form()
+        user_form = UserRegistrationForm()
+        sub_form = UserAreaSubscriptionForm()
 
     return render(
         request,
         "notification/subscribe.html",
-        {   
+        {
             # account fields for new user
             "user_form": user_form,
             # alert settings fields
@@ -137,12 +131,13 @@ def subscribe(request):
         },
     )
 
+
 @login_required
 # dedicated user alert page
-def user_alerts(request):
+def user_alerts_view(request):
 
     # get only user's saved subscriptions
-    subscriptions = user_area_subscription.objects.filter(user=request.user)
+    subscriptions = UserAreaSubscription.objects.filter(user=request.user)
 
     # picks which area is being viewed
     selected_area = request.GET.get("area", "").strip()
@@ -151,8 +146,8 @@ def user_alerts(request):
     if not selected_area and subscriptions.exists():
         selected_area = subscriptions.first().area
 
-    # pull full alert queryset and remove test alerts
-    alerts_qs = noaa_alerts.objects.exclude(event__icontains="test")
+    # pull full alert query except for test alerts
+    alerts_qs = NoaaAlert.objects.exclude(event__icontains="test")
 
     # filter alerts if user selected an area
     if selected_area:
@@ -174,7 +169,7 @@ def user_alerts(request):
 
     # handle submitted subscription form
     if request.method == "POST":
-        form = user_area_subscription_form(request.POST)
+        form = UserAreaSubscriptionForm(request.POST)
         if form.is_valid():
             # assign owner
             sub = form.save(commit=False)
@@ -183,7 +178,7 @@ def user_alerts(request):
             messages.success(request, "subscription added")
             return redirect("user_alerts")
     else:
-        form = user_area_subscription_form()
+        form = UserAreaSubscriptionForm()
 
     # send everything to page
     return render(request, "notification/user_alerts.html", {
@@ -195,11 +190,38 @@ def user_alerts(request):
         "severity_values": json.dumps(severity_values),
     })
 
+
 @login_required
 # delete subscription
-def delete_subscription(request, sub_id):
+def delete_subscription_view(request, sub_id):
     # finds sub matching id owned by user and if not found throws a 404 error
-    sub = get_object_or_404(user_area_subscription, id=sub_id, user=request.user)
+    sub = get_object_or_404(UserAreaSubscription, id=sub_id, user=request.user)
     sub.delete()
     messages.warning(request, "Subscription removed.")
     return redirect("user_alerts")
+
+
+# directory where uploaded files are saved temporarily
+UPLOAD_DIR = "/tmp/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# upload csv view
+def upload_csv_view(request):
+    message = None
+    if request.method == 'POST':
+        form = CsvUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            upload_file = form.cleaned_data["file"]
+            save_path = os.path.join(UPLOAD_DIR, upload_file.name)
+            # write file to disk in chunks
+            with open(save_path, "wb+") as destination:
+                for chunk in upload_file.chunks():
+                    destination.write(chunk)
+            # trigger separate process to import data
+            subprocess.Popen([
+                "python", "manage.py", "import_storms", save_path
+            ])
+            message = "CSV uploaded"
+    else:
+        form = CsvUploadForm()
+    return render(request, "notification/upload_csv.html", {"form": form, "message": message})
