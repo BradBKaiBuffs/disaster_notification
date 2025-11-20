@@ -6,7 +6,7 @@
 
 {# show warning if user is not staff #}
 {% if not request.user.is_staff %}
-    <p style="color:red;">You do not have permission to upload files.</p>
+    <p style="color: red;">You do not have permission to upload files.</p>
 {% else %}
 
 <form method="post" enctype="multipart/form-data">
