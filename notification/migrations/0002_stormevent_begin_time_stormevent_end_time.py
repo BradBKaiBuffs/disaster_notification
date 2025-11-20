@@ -20,4 +20,9 @@ class Migration(migrations.Migration):
             name='end_time',
             field=models.IntegerField(default=1),
         ),
+        migrations.AddField(
+        model_name='userareasubscription',
+        name='county',
+        field=models.CharField(max_length=200, default=''),
+),
     ]

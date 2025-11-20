@@ -38,21 +38,22 @@
 
             <!-- this part switches based on user login status -->
             {% if user.is_authenticated %}
+                
+                <!-- Only Admin log in shows below -->
+                {% if user.is_staff %}
+                    <a href="/admin/" class="btn btn-primary btn-sm me-2">Admin</a>
+                    <a href="/upload_csv/" class="btn btn-primary btn-sm me-2">Upload CSV</a>
+                {% endif %}
 
-                <!-- logout must be post or django rejects it -->
                 <form method="POST" action="{% url 'logout' %}" class="d-inline">
                     {% csrf_token %}
                     <button class="btn btn-primary btn-sm me-2">Logout</button>
                 </form>
-
-                <a href="/admin/" class="btn btn-primary btn-sm me-2">Admin</a>
-
-                <a href="/upload_csv/" class="btn btn-primary btn-sm me-2">Upload CSV</a>
-
+                <span class="navbar-text me-3">
+                    Logged in as <strong>{{ user.username }}</strong>
+                </span>
             {% else %}
-
                 <a href="{% url 'login' %}" class="btn btn-success btn-sm">Login</a>
-
             {% endif %}
         </div>
     </div>

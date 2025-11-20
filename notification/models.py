@@ -54,10 +54,10 @@ class NoaaAlert(models.Model):
 class UserAreaSubscription(models.Model):
     # holds the notification choices that the user can pick
     NOTIFY_CHOICES = [
-        ("new", "notify on new alert"),
-        ("update", "notify on update"),
-        ("expires", "notify before expiry"),
-        ("all", "all notification options"),
+        ("new", "Notify on new alert"),
+        ("update", "Notify on update"),
+        ("expires", "Notify before expiry"),
+        ("all", "All notifications"),
     ]
 
     # links each subscription to a real user account
@@ -67,7 +67,8 @@ class UserAreaSubscription(models.Model):
     area = models.CharField(max_length=255)
 
     # stores county
-    county = models.CharField(max_length=255)
+    # already had fields during tests so have to put in a default space to make it work
+    county = models.CharField(max_length=255, default='')
 
     # keeps the phone number for sending sms alerts later
     phone_number = models.CharField(max_length=20)
