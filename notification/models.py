@@ -66,6 +66,9 @@ class UserAreaSubscription(models.Model):
     # stores the area text
     area = models.CharField(max_length=255)
 
+    # stores county
+    county = models.CharField(max_length=255)
+
     # keeps the phone number for sending sms alerts later
     phone_number = models.CharField(max_length=20)
 

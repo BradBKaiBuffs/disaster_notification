@@ -3,7 +3,7 @@
 
 <div class="container mt-4">
 
-    <h2 class="mb-3">Alert Subscription</h2>
+    <h2 class="mb-3">Subscribe to notifications</h2>
 
     {% if not user.is_authenticated %}
 
@@ -38,6 +38,19 @@
                 {% endfor %}
             </datalist>
 
+            <!-- county field -->
+            <label class="form-label">County</label>
+            <input type="text"
+                   name="county"
+                   class="form-control"
+                   placeholder="Type county name"
+                   list="county-list">
+            <datalist id="county-list">
+                {% for c in counties %}
+                    <option value="{{ c }}"></option>
+                {% endfor %}
+            </datalist>
+            
             <!-- phone number field -->
             <label class="form-label mt-3">Phone Number</label>
             {{ sub_form.phone_number }}
@@ -64,12 +77,24 @@
             <input type="text"
                    name="area"
                    class="form-control"
-                   placeholder="Start typing area name"
+                   placeholder="Type area name"
                    list="area-list">
-
             <datalist id="area-list">
                 {% for a in areas %}
                     <option value="{{ a }}"></option>
+                {% endfor %}
+            </datalist>
+
+            <!-- county field -->
+            <label class="form-label">County</label>
+            <input type="text"
+                   name="county"
+                   class="form-control"
+                   placeholder="Type county name"
+                   list="county-list">
+            <datalist id="county-list">
+                {% for c in counties %}
+                    <option value="{{ c }}"></option>
                 {% endfor %}
             </datalist>
 

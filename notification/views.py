@@ -80,7 +80,7 @@ def heatmap_chart():
     )
 
     fig.update_layout(
-        title="Storm Events Heatmap (Year vs Month)",
+        title="Storm Events Heatmap from 2015-2025 (Year vs Month)",
         xaxis=dict(title="Month"),
         yaxis=dict(title="Year")
     )
@@ -102,7 +102,7 @@ def dashboard_view(request):
     fig1 = pltgo.Figure(
         data=[pltgo.Bar(x=years, y=totals)],
         layout=pltgo.Layout(
-            title="Storm Events Per Year",
+            title="Storm Events Per Year (2015-2025)",
             yaxis=dict(title="Event Count", range=[0, max(totals) * 1.1])
         )
     )
@@ -110,6 +110,24 @@ def dashboard_view(request):
 
     # heatmap
     heatmap = heatmap_chart()
+
+    # storm type chart for whole dataset
+    all_types = (
+        StormEvent.objects
+        .values("event_type")
+        .annotate(total=Count("event_id"))
+        .order_by("-total")
+    )
+
+    labels = [t["event_type"] for t in all_types]
+    counts = [t["total"] for t in all_types]
+
+    fig_types = pltgo.Figure(
+        data=[pltgo.Bar(x=labels, y=counts)],
+        layout=pltgo.Layout(title="Storm Events by Type (2015-2025)")
+    )
+
+    storm_type_chart = plot(fig_types, output_type="div")
 
     # excludes test alerts
     alerts = NoaaAlert.objects.exclude(event__icontains='test')
@@ -141,6 +159,7 @@ def dashboard_view(request):
     context = {
         'heatmap': heatmap,
         'storm_chart': storm_chart,
+        'storm_type_chart': storm_type_chart,
         'alerts': alerts
     }
 
@@ -206,8 +225,6 @@ def county_event_type_chart(county):
         data=[pltgo.Bar(x=labels, y=counts)],
         layout=pltgo.Layout(
             title=f"Storm Events by Type in {county}",
-            xaxis=dict(title="Event Type"),
-            yaxis=dict(title="Count")
         )
     )
 
@@ -242,6 +259,7 @@ def subscribe_view(request):
         if request.method == "POST":
             sub_form = UserAreaSubscriptionForm(request.POST)
 
+            # check
             if sub_form.is_valid():
                 sub = sub_form.save(commit=False)
                 sub.user = request.user
@@ -264,6 +282,7 @@ def subscribe_view(request):
         user_form = UserRegistrationForm(request.POST)
         sub_form = UserAreaSubscriptionForm(request.POST)
 
+        # check
         if user_form.is_valid() and sub_form.is_valid():
 
             user = user_form.save()
@@ -310,7 +329,7 @@ def user_alerts_view(request):
     if selected_area:
         alerts_qs = alerts_qs.filter(area_desc__icontains=selected_area)
 
-    # ordering before slicing to avoid django error
+    # ordering before slicing to avoid django error I kept getting
     alerts = alerts_qs.order_by("-sent")[:50]
 
     # picks which county is being viewed
@@ -342,6 +361,7 @@ def user_alerts_view(request):
     # form handler
     if request.method == "POST":
         form = UserAreaSubscriptionForm(request.POST)
+
         if form.is_valid():
             sub = form.save(commit=False)
             sub.user = request.user
@@ -360,6 +380,7 @@ def user_alerts_view(request):
         "form": form,
         "severity_labels": json.dumps(severity_labels),
         "severity_values": json.dumps(severity_values),
+        "selected_county": selected_county,
         "county_events": county_events,
         "county_yearly_chart": county_yearly_chart(selected_county) if selected_county else None,
         "county_event_type_chart": county_event_type_chart(selected_county) if selected_county else None,
@@ -394,15 +415,10 @@ def upload_csv_view(request):
         return HttpResponseForbidden("Only admin has access to this page.")
 
     message = None
-
     if request.method == 'POST':
-
         form = CsvUploadForm(request.POST, request.FILES)
-
         if form.is_valid():
-
             upload_file = form.cleaned_data["file"]
-
             save_path = os.path.join(UPLOAD_DIR, upload_file.name)
 
             # write file
@@ -416,8 +432,7 @@ def upload_csv_view(request):
             ])
 
             message = "CSV uploaded"
-
     else:
         form = CsvUploadForm()
-
+        
     return render(request, "notification/upload_csv.html", {"form": form, "message": message})

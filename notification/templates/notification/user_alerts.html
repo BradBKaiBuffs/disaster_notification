@@ -16,6 +16,7 @@
         <thead>
             <tr>
                 <th>Area</th>
+                <th>County</th>
                 <th>Phone</th>
                 <th>Type</th>
                 <th></th>
@@ -25,6 +26,7 @@
             {% for sub in subscriptions %}
             <tr>
                 <td>{{ sub.area }}</td>
+                <td>{{ sub.county }}</td>
                 <td>{{ sub.phone_number }}</td>
                 <td>{{ sub.get_notification_type_display }}</td>
                 <td>
@@ -38,9 +40,39 @@
             <tr><td colspan="4">No subscriptions</td></tr>
             {% endfor %}
         </tbody>
-    </table>
 
-    <hr>
+    <!-- county selection -->
+    <form method="get" class="mb-3">
+        <label class="form-label">Choose County</label>
+
+        <input type="text"
+            name="county"
+            class="form-control"
+            placeholder="Type county name"
+            list="county-list"
+            value="{{ selected_county }}">
+
+        <datalist id="county-list">
+            {% for c in subscriptions %}
+                {% if c.county %}
+                    <option value="{{ c.county }}"></option>
+                {% endif %}
+            {% endfor %}
+        </datalist>
+
+        <button class="btn btn-secondary mt-2">Update</button>
+    </form>
+  
+    </table>
+    {% if county_yearly_chart %}
+        <h3 class="mt-4">Storm trends for your county from 2015 to 2025</h3>
+        {{ county_yearly_chart|safe }}
+    {% endif %}
+
+    {% if county_event_type_chart %}
+        <h3 class="mt-4">Storm types affecting your country from 2015 to 2025</h3>
+        {{ county_event_type_chart|safe }}
+    {% endif %}
 
     <h4>Add New Subscription</h4>
     <form method="POST" class="card p-3 shadow-sm w-50">
