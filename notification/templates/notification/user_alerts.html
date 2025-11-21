@@ -3,83 +3,165 @@
 
 {% block content %}
 <div class="container mt-4">
-
+    <!-- TITLE -->
     <h2>Your Alert Subscriptions</h2>
 
     {% if messages %}
-    {% for msg in messages %}
-        <div class="alert alert-info">{{ msg }}</div>
-    {% endfor %}
+        {% for msg in messages %}
+            <div class="alert alert-info">{{ msg }}</div>
+        {% endfor %}
     {% endif %}
-
+    <!-- TABLE OF SUBS -->
     <table class="table table-striped mt-3">
         <thead>
             <tr>
                 <th>Area</th>
+                <th>State</th>
                 <th>County</th>
                 <th>Phone</th>
-                <th>Type</th>
+                <th>Notification Type</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
             {% for sub in subscriptions %}
-            <tr>
-                <td>{{ sub.area }}</td>
-                <td>{{ sub.county }}</td>
-                <td>{{ sub.phone_number }}</td>
-                <td>{{ sub.get_notification_type_display }}</td>
-                <td>
-                    <a class="btn btn-sm btn-danger"
-                       href="{% url 'delete_subscription' sub.id %}">
-                        Delete
-                    </a>
-                </td>
-            </tr>
+                <tr>
+                    <td>{{ sub.area }}</td>
+                    <td>{{ sub.state }}</td>
+                    <td>{{ sub.county }}</td>
+                    <td>{{ sub.phone_number }}</td>
+                    <td>{{ sub.get_notification_type_display }}</td>
+                    <td>
+                        <a class="btn btn-sm btn-danger"
+                           href="{% url 'delete_subscription' sub.id %}">
+                            delete
+                        </a>
+                    </td>
+                </tr>
             {% empty %}
-            <tr><td colspan="4">No subscriptions</td></tr>
+                <tr><td colspan="6"> No subscriptions found</td></tr>
             {% endfor %}
         </tbody>
-
-    <!-- county selection -->
-    <form method="get" class="mb-3">
-        <label class="form-label">Choose County</label>
-
-        <input type="text"
-            name="county"
-            class="form-control"
-            placeholder="Type county name"
-            list="county-list"
-            value="{{ selected_county }}">
-
-        <datalist id="county-list">
-            {% for c in subscriptions %}
-                {% if c.county %}
-                    <option value="{{ c.county }}"></option>
-                {% endif %}
-            {% endfor %}
-        </datalist>
-
-        <button class="btn btn-secondary mt-2">Update</button>
-    </form>
-  
     </table>
+
+    
+    <form method="get" class="mb-3 w-50">
+        <!-- STATE DROP DOWN -->
+        <label class="form-label">Select State</label>
+        <select name="state" id="graph-state" class="form-control">
+            <option value="">Select State</option>
+            {% for st in states %}
+                <option value="{{ st }}" {% if st == selected_state %}selected{% endif %}>{{ st }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- COUNTY DROP DOWN -->
+        <label class="form-label mt-2">Select County</label>
+        <select name="county" id="graph-county" class="form-control">
+            <option value="">Select County</option>
+        </select>
+
+        <button class="btn btn-secondary mt-3">Update</button>
+    </form>
+
     {% if county_yearly_chart %}
-        <h3 class="mt-4">Storm trends for your county from 2015 to 2025</h3>
         {{ county_yearly_chart|safe }}
     {% endif %}
 
     {% if county_event_type_chart %}
-        <h3 class="mt-4">Storm types affecting your country from 2015 to 2025</h3>
         {{ county_event_type_chart|safe }}
     {% endif %}
+    
+    <h4 class="mt-4">Add New Subscription</h4>
 
-    <h4>Add New Subscription</h4>
     <form method="POST" class="card p-3 shadow-sm w-50">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn btn-primary">Add Subscription</button>
-    </form>
 
+        <!-- AREA -->
+        <label class="form-label">Area</label>
+        <input type="text"
+               name="area"
+               class="form-control"
+               placeholder="Type City or Area"
+               list="area-list">
+
+        <datalist id="area-list">
+            {% for sub in subscriptions %}
+                <option value="{{ sub.area }}"></option>
+            {% endfor %}
+        </datalist>
+
+        <!-- STATE -->
+        <label class="form-label">State</label>
+        <select id="state-select" name="state" class="form-control">
+            <option value="">Select State</option>
+            {% for st in states %}
+                <option value="{{ st }}">{{ st }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- COUNTY -->
+        <label class="form-label mt-2">County</label>
+        <select id="county-select" name="county" class="form-control">
+            <option value="">Select County</option>
+        </select>
+
+        <!-- PHONE NUMBER -->
+        <label class="form-label mt-3">Phone Number</label>
+        <input type="text"
+               name="phone_number"
+               value="{{ form.phone_number.value }}"
+               class="form-control"
+               placeholder="Enter phone number">
+
+         <!-- NOTIFICATION TYPE-->
+        <label class="form-label mt-3">Notification Type</label>
+        {{ form.notification_type }}
+
+        <button class="btn btn-primary mt-3">Add Subscription</button>
+    </form>
 </div>
+
+<script>
+
+    // listens for when user picks a state from the dropdown
+    document.getElementById("state-select").addEventListener("change", function () {
+
+        // grabs the state selected by the user and uses it to call the backend to get counties
+        let state = this.value;
+
+        // call my django ajax url and sends the selected state as a querystring
+        fetch(`/ajax/get-counties/?state=${state}`)
+
+            // response.json() turns the server response into a js object
+            .then(response => response.json())
+
+            // use the returned data to update county dropdown
+            .then(data => {
+
+                // grab the county select box so we can update it
+                let countySelect = document.getElementById("county-select");
+
+                // wipe old counties so list is clean first then set innerHTML so it resets back to default text
+                countySelect.innerHTML = '<option value="">select county</option>';
+
+                // now loop all the counties
+                // data.counties is a list of county names
+                data.counties.forEach(ct => {
+
+                    // create an option tag in javascript
+                    let opt = document.createElement("option");
+
+                    // set the value and text for this county option
+                    opt.value = ct;
+                    opt.textContent = ct;
+
+                    // put the new option into the dropdown
+                    countySelect.appendChild(opt);
+                });
+            });
+
+    });
+</script>
+
 {% endblock %}

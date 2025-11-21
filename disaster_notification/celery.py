@@ -2,21 +2,20 @@ import os
 from celery import Celery
 from django.conf import settings
 
-# Celery configuration
+# load module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'disaster_notification.settings')
 
-# set app
+# celery
 app = Celery('disaster_notification')
 
+# redis url
 app.conf.broker_url = os.getenv('REDIS_URL')
 
+# redis backend
 app.conf.result_backend = os.getenv('REDIS_URL')
 
+#celery settings
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# load task modules
+# auto finds tasks
 app.autodiscover_tasks()
-
-@app.task(bind=True, ignore_result=True)
-def debug_task(self):
-    print(f'Request: {self.request!r}')

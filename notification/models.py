@@ -69,6 +69,7 @@ class UserAreaSubscription(models.Model):
     # stores county
     # already had fields during tests so have to put in a default space to make it work
     county = models.CharField(max_length=255, default='')
+    state = models.CharField(max_length=255, default='')
 
     # keeps the phone number for sending sms alerts later
     phone_number = models.CharField(max_length=20)

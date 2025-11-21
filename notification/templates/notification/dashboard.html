@@ -1,11 +1,11 @@
 {% extends "notification/base.html" %}
 
-{% block title %}Weather Notifications Page{% endblock %}
+{% block title %}Disaster Notifications Page{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Weather Notifications Page</h1>
+<h1 class="mb-4">Disaster Notifications Page</h1>
 
-<!-- filters -->
+<!-- FILTERS -->
 <form method="get" class="row g-3 mb-4">
     <div class="col-md-4">
         <label for="area" class="form-label">Area</label>
@@ -36,7 +36,8 @@
         <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Reset</a>
     </div>
 </form>
-<!-- alerts table -->
+
+<!-- ALERT TABLE -->
 {% if alerts %}
 <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
@@ -64,19 +65,20 @@
         </tbody>
     </table>
 </div>
-<!-- heatmap -->
+
+<!-- DISASTER HEATMAP -->
 <div class="mt-4 mb-4">
     {{ heatmap|safe }}
 </div>
 
-<!-- weather events per year -->
+<!-- DISASTER EVENTS PER YEAR CHART -->
 <div class="mt-4 mb-4">
-    {{ storm_chart|safe }}
+    {{ disaster_chart|safe }}
 </div>
 
-<!-- weather events by type -->
+<!-- DISASTER EVENTS BY TYPE CHART -->
 <div class="mt-4 mb-4">
-    {{ storm_type_chart|safe }}
+    {{ disaster_type_chart|safe }}
 </div>
 
 {% else %}

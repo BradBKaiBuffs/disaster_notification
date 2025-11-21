@@ -2,7 +2,7 @@ from import_export import resources, fields
 from .models import StormEvent
 
 # storm event import resource
-# connects csv fields directly into the storm_event model
+# links csv fields to storm_event model
 class StormEventResource(resources.ModelResource):
     event_id = fields.Field(attribute="event_id", column_name="EVENT_ID")
     event_type = fields.Field(attribute="event_type", column_name="EVENT_TYPE")
@@ -28,14 +28,9 @@ class StormEventResource(resources.ModelResource):
         # match duplicates by primary key
         import_id_fields = ["event_id"]
 
-        # skip unchanged rows to prevent re-importing same values
+        # skips duplicates
         skip_unchanged = True
-
-        # stops idential data from being updated
         skip_diff = True
 
-        # prints warnings 
-        report_skipped = True
-
-        # raise import errors to help debugging during development
+        # for debugging
         raise_errors = True

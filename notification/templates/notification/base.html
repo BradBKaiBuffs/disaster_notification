@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Weather Notifications Page</title>
+    <title>Disaster Notifications Page</title>
 
-    <!-- bootstrap -->
+    <!-- BOOTSTRAP -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 </head>
@@ -14,32 +14,31 @@
 
 <nav class="navbar navbar-dark bg-dark mb-4">
     <div class="container-fluid">
-        <!-- title -->
-        <span class="navbar-brand">Weather Notifications Page</span>
+        <!-- TITLE -->
+        <span class="navbar-brand">Disaster Notifications Page</span>
         <div class="d-flex">
 
-            <!-- link to dashboard page -->
+            <!-- LINK TO DASHBOARD PAGE -->
             <a href="{% url 'dashboard' %}"
                class="btn btn-primary btn-sm me-2">
                 Dashboard
             </a>
 
-            <!-- link to subscription form page -->
+            <!-- LINK TO SUBSCRIPTION PAGE -->
             <a href="{% url 'subscribe' %}"
                class="btn btn-primary btn-sm me-2">
                 Subscribe
             </a>
 
-            <!-- link to personal user alert page -->
+            <!-- LINK TO PERSONAL USER ALERTS PAGE -->
             <a href="{% url 'user_alerts' %}"
                class="btn btn-primary btn-sm me-2">
                 User Alerts Page
             </a>
 
-            <!-- this part switches based on user login status -->
             {% if user.is_authenticated %}
                 
-                <!-- Only Admin log in shows below -->
+->
                 {% if user.is_staff %}
                     <a href="/admin/" class="btn btn-primary btn-sm me-2">Admin</a>
                     <a href="/upload_csv/" class="btn btn-primary btn-sm me-2">Upload CSV</a>
@@ -59,7 +58,7 @@
     </div>
 </nav>
 <main class="container">
-    <!-- block used for different pages -->
+
     {% block content %}
     {% endblock %}
 </main>

@@ -11,13 +11,17 @@ class UserAreaSubscriptionForm(forms.ModelForm):
         model = UserAreaSubscription
 
         # these are the fields the user can fill out
-        fields = ["area", "county", "phone_number", "notification_type"]
+        fields = ["area", "state", "county", "phone_number", "notification_type"]
 
         # widgets
         widgets = {
             "area": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Type area name",
+            }),
+            "state": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Type state name",
             }),
             "county": forms.TextInput(attrs={
                 "class": "form-control",
