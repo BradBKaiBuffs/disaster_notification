@@ -4,9 +4,10 @@ import requests
 from celery import shared_task
 # isoparse so iso date strings turn into datetime objects
 from dateutil.parser import isoparse
-# importing the User model from django auth system for the debug task
-from django.contrib.auth.models import User
+# for sending email
+from django.core.mail import send_mail
 from .models import NoaaAlert
+from django.conf import settings
 
 
 # noaa api url for active alerts
@@ -135,3 +136,17 @@ def grab_noaa_alerts_task():
     # catching any other exception inside entire task
     except Exception as e:
         return f"{e}"
+
+@shared_task(bind=True)
+def send_email_task(self, subject, message, to_email):
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [to_email],
+            fail_silently=False
+        )
+        return f"Sent to {to_email}"
+    except Exception as e:
+        return f"Sent failed: {e}"
