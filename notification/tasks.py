@@ -136,7 +136,9 @@ def grab_noaa_alerts_task():
     # catching any other exception inside entire task
     except Exception as e:
         return f"{e}"
-
+    
+# testing for now
+# will use this for emailing
 @shared_task(bind=True)
 def send_email_task(self, subject, message, to_email):
     try:
@@ -150,3 +152,40 @@ def send_email_task(self, subject, message, to_email):
         return f"Sent to {to_email}"
     except Exception as e:
         return f"Sent failed: {e}"
+    
+# carriers to be used for task
+carrier_gateways = {
+    # "att": "txt.att.net" no longer works
+    "Verizon": "vtext.com",
+    "T-Mobile": "tmomail.net",
+    "Sprint": "messaging.sprintpcs.com",
+    "Boost": "myboostmobile.com",
+    "Cricket": "sms.cricketwireless.net",
+    "GoogleFi": "msg.fi.google.com",
+    "US Mobile": "tmomail.net"
+}
+
+# sends SMS messages using gmail
+@shared_task
+def send_sms_task(to_number, carrier, message):
+    # check
+    if carrier not in carrier_gateways:
+        return "Carrier not found"
+    
+    gateway = carrier_gateways[carrier]
+
+    # create the email
+    sms_email = f"{to_number}@{gateway}"
+
+    # connect to gmail stemp
+    try:
+        send_mail(
+            subject="",
+            message=message,
+            from_email=None,
+            recipient_list=[sms_email],
+            fail_silently=False
+        )
+        return "Sent SMS"
+    except Exception as e:
+        return f"Failed: {str(e)}"

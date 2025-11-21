@@ -28,7 +28,7 @@ import plotly.graph_objs as pltgo
 from plotly.offline import plot
 # used to end json response to javascript
 from django.http import JsonResponse
-from .tasks import send_email_task
+from .tasks import send_email_task, send_sms_task
 
 
 # disaster events grouped by year
@@ -659,11 +659,38 @@ def upload_csv_view(request):
         
     return render(request, "notification/upload_csv.html", {"form": form, "message": message})
 
-def email_view(request):
+def test_email_view(request):
+
+    message_sent = None
+
     subject = "Disaster Notification"
     message = "There is a new alert in your area."
-    to_email = "bkai1@wtamu.edu"
-    # trigger celery task
+    to_email = "bkai1@buffs.wtamu.edu"
+
+    # start celery task
     send_email_task.delay(subject, message, to_email)
 
-    return render(request, "notfication/test_email_sent.html")
+    message_sent = "Email sent to Celery Worker"
+
+    return render(request, "notification/test_email.html", {
+        "message_sent": message_sent
+    })
+
+def test_sms_view(request):
+
+    message_sent = None
+
+    if request.method == "POST":
+        # read fields
+        phone = request.POST.get("phone")
+        carrier = request.POST.get("carrier")
+        msg = request.POST.get("message")
+
+        # start task
+        send_sms_task.delay(phone, carrier, msg)
+
+        message_sent = "SMS Sent to Celery Worker"
+
+    return render( request, "notification/test_sms.html", {
+        "message_sent": message_sent
+    })

@@ -63,7 +63,7 @@ class UserAreaSubscription(models.Model):
     # links each subscription to a real user account
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    # stores the area text
+    # the area
     area = models.CharField(max_length=255)
 
     # stores county
@@ -71,8 +71,11 @@ class UserAreaSubscription(models.Model):
     county = models.CharField(max_length=255, default='')
     state = models.CharField(max_length=255, default='')
 
-    # keeps the phone number for sending sms alerts later
+    # phone number for sending sms alerts
     phone_number = models.CharField(max_length=20)
+
+    # carrier information
+    carrier = models.CharField(max_length=50, default="", blank=True)
 
     # saves what notification type the user wants
     notification_type = models.CharField(
