@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 # using Count to annotate and count rows
 from django.db.models import Count
-from .models import NoaaAlert, UserAreaSubscription, StormEvent
+from .models import NoaaAlert, UserAreaSubscription, StormEvent, AlertNotificationTracking
 from .forms import UserAreaSubscriptionForm, UserRegistrationForm, CsvUploadForm
 # sends a forbidden response when someone not allowed opens a page
 from django.http import HttpResponseForbidden
@@ -23,157 +23,149 @@ from django.contrib.admin.views.decorators import staff_member_required
 # import settings to use BASE_DIR for file paths
 from django.conf import settings
 # import plotly graph objects to build charts
-import plotly.graph_objs as pltgo
+import plotly.graph_objs as go
 # plot function turns plotly chart into html to show on template
 from plotly.offline import plot
 # used to end json response to javascript
 from django.http import JsonResponse
-from .tasks import send_email_task, send_sms_task
+from django.core.mail import send_mail
+from django.conf import settings
+from .tasks import send_email_task, send_sms_task, notify_users_task
+from django.utils import timezone
+import uuid
 
 
 # disaster events grouped by year
-def get_disaster_events_per_year():
+def grab_disaster_events_per_year():
 
-    # grabs begin_year from StormEvent model as a list of dicts
-    data = StormEvent.objects.values("begin_year")
+    event_data = StormEvent.objects.values("begin_year")
 
-    # adds up all the event_id counts for each year
-    data = data.annotate(total=Count("event_id"))
+    event_data = event_data.annotate(total=Count("event_id"))
 
-    # sorting by year
-    data = data.order_by("begin_year")
+    event_data = event_data.order_by("begin_year")
 
-    return data
+    return event_data
 
-# builds the raw grouped info for disaster heatmap
-def get_disaster_heatmap_data():
+# create the raw grouped info for disaster heatmap
+def grab_disaster_heatmap_data():
 
-    # grabs begin year and begin month from StormEvent model and counts how many happened
-    # groups by two fields
-    data = (
+    # grabs begin year and begin month from StormEvent model and counts how many happened and groups by two fields
+    calendar_data = (
         StormEvent.objects
         .values("begin_year", "begin_month")
         .annotate(total=Count("event_id"))
         .order_by("begin_year", "begin_month")
     )
 
-    return data
+    return calendar_data
 
 
-# builds a matrix for the heatmap chart
-def build_heatmap_matrix():
+# create a matrix for the heatmap chart used for the dashboard page
+def create_heatmap_matrix():
 
     # grabs grouped data
-    data = get_disaster_heatmap_data()
+    heatmap_data = grab_disaster_heatmap_data()
 
-    # list for years
     years = []
-    for d in data:
-        # only add if not already in list
-        if d["begin_year"] not in years:
-            years.append(d["begin_year"])
 
-    # sort years
+    for h in heatmap_data:
+        # only add if not already in list
+        if h["begin_year"] not in years:
+            years.append(h["begin_year"])
+
     years.sort()
 
-    # list of 1 to 12 for each month
     months = list(range(1, 13))
 
     # matrix
-    h = []
+    m = []
     for _ in years:
         # making a row of zeros matching the 12 months
-        # i learned this pattern from stackoverflow
         empty_row = [0] * len(months)
-        h.append(empty_row)
+        m.append(empty_row)
 
-    # nadd matrix with data
-    for row in data:
-        # grabs the year and month from each row
+    # add matrix with data
+    for row in heatmap_data:
+
         yr = row["begin_year"]
         mo = row["begin_month"]
 
-        # count of events
         total = row["total"]
 
-        # find index for year row
         yr_index = years.index(yr)
 
-        # find index for month column
         mo_index = months.index(mo)
 
         # put the count number into that spot in matrix
-        h[yr_index][mo_index] = total
+        m[yr_index][mo_index] = total
 
     # send back the years, months, and matrix
-    return years, months, h
+    return years, months, m
 
-# heatmap chart
-# uses the matrix from build_heatmap_matrix and turns it into a plotly heatmap
+# heatmap chart that uses the matrix from create_heatmap_matrix and turns it into a plotly heatmap
 def heatmap_chart():
 
-    # call build_heatmap_matrix to build years, months, and the matrix h
-    years, months, h = build_heatmap_matrix()
+    years, months, h = create_heatmap_matrix()
 
-    # create a figure object from plotly
-    fig = pltgo.Figure(
-        data=pltgo.Heatmap(
+    fig = go.Figure(
+        data=go.Heatmap(
             z=h,
             x=months,
             y=years,
             colorscale="Viridis",
-            colorbar=dict(title="Events")
+            colorbar=dict(title="Events"),
         )
     )
 
-    # layout
     fig.update_layout(
         title="Disaster Events Heatmap from 2015-2025 (Year vs Month)",
-        xaxis=dict(title="Month"),
-        yaxis=dict(title="Year")
+        xaxis=dict(
+            title="Month",
+        ),
+        yaxis=dict(
+            title="Year",
+        ),
     )
 
-    # turns the figure into a html div string
     return plot(fig, output_type="div")
 
 
-# main dashboard page view
-# displays charts and NOAA alerts
+# main dashboard page view that displays charts when selecting a county/state and allows filtering of existing alerts
 def dashboard_view(request):
 
-    # grab yearly disaster data
-    disaster_data = get_disaster_events_per_year()
+    disaster_data = grab_disaster_events_per_year()
 
-    # two lists, one for years and one for totals
     years = []
     totals = []
+
     for d in disaster_data:
-        # add the year to the years list
         years.append(d["begin_year"])
-        # add the count to the totals list
         totals.append(d["total"])
 
-    # bar chart for disaster events per year
-    fig1 = pltgo.Figure(
-        data=[pltgo.Bar(x=years, y=totals)],
-        layout=pltgo.Layout(
+    # bar chart that is for disaster events per year
+    fig1 = go.Figure(
+        data=[
+            go.Bar(
+                x=years,
+                y=totals
+                )
+            ],
+        layout=go.Layout(
             title="Disaster Events Per Year (2015-2025)",
             yaxis=dict(
                 title="Event Count",
-                # max(totals) * 1.1 to get a figure above bars
+
+                # max(totals) * 1.1 to get a figure above bars since it looks better like this than default
                 range=[0, max(totals) * 1.1]
             )
         )
     )
 
-    # convert the figure into html div
     disaster_chart = plot(fig1, output_type="div")
 
-    # grab heatmap function to make the heatmap html
     heatmap = heatmap_chart()
 
-    # basis of chart for disaster event types across all data
-    # grabs event_type and counts how many for each one
+    # looks at event_type and counts how many for each one
     all_types = (
         StormEvent.objects
         .values("event_type")
@@ -181,32 +173,34 @@ def dashboard_view(request):
         .order_by("-total")
     )
 
-    # build label and count lists for the chart
     labels = []
     counts = []
+
     for t in all_types:
-        # event_type goes in labels
         labels.append(t["event_type"])
-        # total number goes in counts
         counts.append(t["total"])
 
-    # bar chart for disaster types with plotly
-    fig_types = pltgo.Figure(
-        data=[pltgo.Bar(x=labels, y=counts)],
-        layout=pltgo.Layout(title="Disaster Events by Type (2015-2025)"),
-        # max(totals) * 1.1 to get a figure above bars
+    # plotly bar char for disaster events by type
+    fig_types = go.Figure(
+        data=[
+            go.Bar(
+                x=labels,
+                y=counts
+                )
+            ],
+        layout=go.Layout(
+            title="Disaster Events by Type (2015-2025)"
+            ),
     )
 
-    # padding for y-axis range
+    # max(totals) * 1.1 to get a figure above bars
     fig_types.update_yaxes(range=[0, max(totals) * 1.1])
 
-    # convert disaster type chart to html
     disaster_type_chart = plot(fig_types, output_type="div")
 
-    # grab noaa alerts but exclude test
+    # excludes test alerts since this provide little value
     alerts = NoaaAlert.objects.exclude(event__icontains='test')
 
-    # read any filters the user typed in query string
     # area filter
     area = request.GET.get('area', '').strip()
     # severity filter
@@ -238,7 +232,6 @@ def dashboard_view(request):
     else:
         alerts = alerts.order_by('-sent')[:5]
 
-    # build the context dictionary that goes to the template
     context = {
         'heatmap': heatmap,
         'disaster_chart': disaster_chart,
@@ -248,17 +241,14 @@ def dashboard_view(request):
 
     return render(request, 'notification/dashboard.html', context)
 
-# grabs yearly disaster counts for a specific county and state
-def get_county_yearly_data(state, county):
+# grabs totals of disasters per year for a specific combination of county and state
+def grab_county_yearly_data(state, county):
 
-    # normalize the state by forcing lowercase and removing extra spaces
     st = state.lower().strip()
 
-    # normalize county by lowercasing and removing extra spaces
     ct = county.lower().strip()
 
-    # filter StormEvent model by state and county
-    data = (
+    combined_data = (
         StormEvent.objects
         .filter(state__iexact=st, county__iexact=ct)
         .values("begin_year")
@@ -266,46 +256,50 @@ def get_county_yearly_data(state, county):
         .order_by("begin_year")
     )
 
-    return data
+    return combined_data
 
 
-# bar chart for the county disaster yearly numbers
+# bar chart for the selected county over the span of the years 
 def county_yearly_chart(state, county):
 
-    # grabs grouped county disaster info from get_county_yearly_data
-    yearly = get_county_yearly_data(state, county)
+    yearly = grab_county_yearly_data(state, county)
 
-    # build lists for years and totals
     years = []
     totals = []
-    for r in yearly:
-        # add year to list
-        years.append(r["begin_year"])
-        # add total for that year
-        totals.append(r["total"])
+
+    for y in yearly:
+
+        years.append(y["begin_year"])
+
+        totals.append(y["total"])
 
     # bar chart using plotly
-    fig = pltgo.Figure(
-        data=[pltgo.Bar(x=years, y=totals)],
-        layout=pltgo.Layout(
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=years,
+                y=totals,
+                )
+            ],
+        layout=go.Layout(
             title=f"Disaster Events Per Year in {county}, {state} (2015 to 2025)",
-            yaxis=dict(title="Count")
+            yaxis=dict(
+                title="Count"
+                )
         )
     )
 
-    # return as html string
     return plot(fig, output_type="div")
 
 
 # grabs disaster event types and how many happened for each type
-def get_county_event_type_data(state, county):
+def grab_county_event_type_data(state, county):
 
-    # cleaning like before
     st = state.lower().strip()
     ct = county.lower().strip()
 
     # group by event_type and count how many for each type
-    data = (
+    combined_data = (
         StormEvent.objects
         .filter(state__iexact=st, county__iexact=ct)
         .values("event_type")
@@ -313,42 +307,46 @@ def get_county_event_type_data(state, county):
         .order_by("-total")
     )
 
-    return data
+    return combined_data
 
 
-# bar chart shows disaster event types for a certain county
+# bar chart for disaster types for when a user selects a county on user page
 def county_event_type_chart(state, county):
 
-    # grab type data from get_county_event_type_data
-    type_data = get_county_event_type_data(state, county)
+  disaster_types = grab_county_event_type_data(state, county)
 
-    # build label and count lists
-    labels = []
-    counts = []
-    for r in type_data:
-        # type name goes into labels
-        labels.append(r["event_type"])
-        # total count goes into counts
-        counts.append(r["total"])
+  disaster_types = []
+  disaster_totals = []
 
-    # bar chart for event types using plotly again
-    fig = pltgo.Figure(
-        data=[pltgo.Bar(x=labels, y=counts)],
-        layout=pltgo.Layout(title=f"Disaster Events by Type in {county}, {state} (2015 to 2025)")
-    )
+  for t in type:
+    disaster_types.append(t["event_type"])
+    disaster_totals.append(t["total"])
 
-    # convert to html
-    return plot(fig, output_type="div")
+  # use Plotly to create chart
+  fig = go.Figure(
+    data=[
+        go.Bar(
+            x=disaster_types, 
+            y=disaster_totals,
+            )
+        ],
+        layout=
+            go.Layout(
+                title=f"Disaster Event Types in {county}, {state} (2015 - 2025)"
+            )
+        )
+
+  # turn the chart into html so it shows up on the webpage
+  return plot(fig, output_type="div")
 
 
-# returns a list of counties for a given state as json
-# this is for ajax call from javascript when user picks a state
-def get_counties_for_state(request):
+# returns a list of counties
+def grab_counties_for_state(request):
 
-    # get the state from querystring and trim spaces
+    # grab state
     state = request.GET.get("state", "").strip()
 
-    # filters StormEvent model for all rows that match state choice then grab distinct counties and order by county name
+    # find the county with the state
     counties = list(
         StormEvent.objects.filter(state__iexact=state)
         .values_list("county", flat=True)
@@ -356,7 +354,7 @@ def get_counties_for_state(request):
         .order_by("county")
     )
 
-    # return json response that javascript can read
+    # json response for javascript
     return JsonResponse({"counties": counties})
 
 
@@ -493,13 +491,12 @@ def subscribe_view(request):
     })
 
 
-# personalized user page view
-# user must be logged in
+# login is required because it is tied to user subscription
 @login_required
+# personalized user page view
 def user_alerts_view(request):
 
     # grab all the states from StormEvent model
-    # values_list grabs the state column not whole rows
     states = (
         StormEvent.objects
         .values_list("state", flat=True)
@@ -507,13 +504,11 @@ def user_alerts_view(request):
         .order_by("state")
     )
 
-    # build a county map for each state like before
+    # create a county map for each state
     county_map = {}
 
-    # loop every state for counties
+    # go through every state for counties
     for s in states:
-        # filter by state and counties
-        # using distinct and order_by
         county_map[s] = list(
             StormEvent.objects
             .filter(state=s)
@@ -526,7 +521,6 @@ def user_alerts_view(request):
     # allows county selection to view disaster charts
     subscriptions = UserAreaSubscription.objects.filter(user=request.user)
 
-    # read selected county from querystring if provided
     selected_county = request.GET.get("county", "").strip()
 
     # if no county selected and user has subscriptions, then default to the first one
@@ -537,7 +531,7 @@ def user_alerts_view(request):
     # finds one matching row and grabs the state
     selected_state = None
 
-    # if a county exists, then find its state
+    # find the state for the selected county
     if selected_county:
         # filter rows for that county paired with the first state found
         row = (
@@ -547,31 +541,28 @@ def user_alerts_view(request):
             .first()
         )
 
-        # only update if row is not None
+        # update if nothing selected
         if row:
             selected_state = row
 
     # notification type if user posted a form
     selected_type = request.POST.get("notification_type", "")
 
-    # if user submitted the form then build a subscription form from POST data
+    # if user submitted the form then creates a subscription form from POST data
     if request.method == "POST":
         form = UserAreaSubscriptionForm(request.POST)
         selected_type = request.POST.get("notification_type", "")
 
-    # blank form for new subscription
     else:
         form = UserAreaSubscriptionForm()
         selected_type = ""
 
-    # build the yearly chart using county_yearly_chart
-    # both county and state must be chosen for chart to work
+    # creates the yearly chart using county_yearly_chart where both county and state must be chosen for chart to work
     yearly_chart = (
         county_yearly_chart(selected_state, selected_county)
         if selected_state and selected_county else None
     )
 
-    # build the disaster type chart the same way
     type_chart = (
         county_event_type_chart(selected_state, selected_county)
         if selected_state and selected_county else None
@@ -591,11 +582,12 @@ def user_alerts_view(request):
     })
 
 
-# deletes user subscription row
+# this is tied to user subscriptions so have to be logged in
 @login_required
+# deletes user subscription row in alert user page 
 def delete_subscription_view(request, sub_id):
 
-    # grabs the sub id
+    # grabs the subscription id
     sub = get_object_or_404(UserAreaSubscription, id=sub_id, user=request.user)
 
     # delete the subscription from the database
@@ -614,21 +606,18 @@ UPLOAD_DIR = os.path.join(settings.BASE_DIR, "uploaded_files")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-# staff users upload annual csv files containing cleaned disaster event data
+# staff only csv upload
+# I was going to initially use this as the primary method but files were too big
 @staff_member_required
 def upload_csv_view(request):
 
-    # checks if user is staff
     if not request.user.is_staff:
         return HttpResponseForbidden("Only admin has access to this page.")
 
-    # placeholder for message after upload completes
-    message = None
+    message_sent = None
 
-    # check if submitted form
     if request.method == 'POST':
 
-        # build form
         form = CsvUploadForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -636,7 +625,7 @@ def upload_csv_view(request):
             # use the uploaded file
             upload_file = form.cleaned_data["file"]
 
-            # build the full save path
+            # create save path
             save_path = os.path.join(UPLOAD_DIR, upload_file.name)
 
             # open the file
@@ -650,15 +639,19 @@ def upload_csv_view(request):
                 "python", "manage.py", "import_storms", save_path
             ])
 
-            # after uploading and starting import, set message text
-            message = "CSV uploaded"
+            message_sent = "Your file was uploaded"
 
     # GET request shows empty form
     else:
         form = CsvUploadForm()
         
-    return render(request, "notification/upload_csv.html", {"form": form, "message": message})
+    return render(request, "notification/upload_csv.html", {
+        "form": form,
+        "message_sent": message_sent
+        })
 
+
+# not used anymore but keeping it for future use
 def test_email_view(request):
 
     message_sent = None
@@ -667,30 +660,60 @@ def test_email_view(request):
     message = "There is a new alert in your area."
     to_email = "bkai1@buffs.wtamu.edu"
 
-    # start celery task
     send_email_task.delay(subject, message, to_email)
 
     message_sent = "Email sent to Celery Worker"
 
     return render(request, "notification/test_email.html", {
+
         "message_sent": message_sent
     })
 
+# not used anymore but keeping it for future use
 def test_sms_view(request):
 
     message_sent = None
 
     if request.method == "POST":
-        # read fields
+
         phone = request.POST.get("phone")
         carrier = request.POST.get("carrier")
         msg = request.POST.get("message")
 
-        # start task
         send_sms_task.delay(phone, carrier, msg)
 
         message_sent = "SMS Sent to Celery Worker"
 
     return render( request, "notification/test_sms.html", {
         "message_sent": message_sent
+    })
+
+# for testing alerts at initial stage of development
+def test_alert_view(request):
+
+    # create the primary key using uuid
+    fake_id = str(uuid.uuid4())
+
+    # basic information for the alert in email and text, I had to crunch down what I sent for texts
+    alert = NoaaAlert.objects.create(
+        id=fake_id,
+        event="Test Disaster Alert",
+        area_desc="Canyon, TX",
+        description="This is a test alert for disaster notification system.",
+        instruction="This is only a test.",
+        category="Met",
+        severity="Moderate",
+        certainty="Likely",
+        urgency="Expected",
+        sent=timezone.now(),
+        effective=timezone.now(),
+        onset=timezone.now(),
+        expires=timezone.now() + timezone.timedelta(hours=1),
+        affected_zones=[],
+    )
+
+    notify_users_task(alert, "new")
+
+    return render(request, "notification/test_alert.html", {
+        "message_sent": "Completed"
     })

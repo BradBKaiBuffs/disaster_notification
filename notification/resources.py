@@ -1,8 +1,7 @@
 from import_export import resources, fields
 from .models import StormEvent
 
-# storm event import resource
-# links csv fields to storm_event model
+# storm event import resource that links csv fields to storm_event model
 class StormEventResource(resources.ModelResource):
     event_id = fields.Field(attribute="event_id", column_name="EVENT_ID")
     event_type = fields.Field(attribute="event_type", column_name="EVENT_TYPE")

@@ -1,45 +1,53 @@
 {% extends "notification/base.html" %}
-
 {% block title %}Disaster Notifications Page{% endblock %}
 
 {% block content %}
+
 <h1 class="mb-4">Disaster Notifications Page</h1>
 
-<!-- FILTERS -->
+<!-- filter -->
 <form method="get" class="row g-3 mb-4">
+
     <div class="col-md-4">
         <label for="area" class="form-label">Area</label>
-        <input type="text" class="form-control" name="area" id="area" value="{{ request.GET.area }}">
+        <input type="text" class="form-control" id="area" name="area"
+               value="{{ request.GET.area }}">
     </div>
+
     <div class="col-md-4">
         <label for="severity" class="form-label">Severity</label>
         <select class="form-select" name="severity" id="severity">
             <option value="">All</option>
-            <option value="Severe" {% if request.GET.severity == 'Severe' %}selected{% endif %}>Severe</option>
-            <option value="Moderate" {% if request.GET.severity == 'Moderate' %}selected{% endif %}>Moderate</option>
-            <option value="Minor" {% if request.GET.severity == 'Minor' %}selected{% endif %}>Minor</option>
+            <option value="Severe" {% if request.GET.severity == "Severe" %}selected{% endif %}>Severe</option>
+            <option value="Moderate" {% if request.GET.severity == "Moderate" %}selected{% endif %}>Moderate</option>
+            <option value="Minor" {% if request.GET.severity == "Minor" %}selected{% endif %}>Minor</option>
         </select>
     </div>
+
     <div class="col-md-4">
         <label for="urgency" class="form-label">Urgency</label>
         <select class="form-select" name="urgency" id="urgency">
             <option value="">All</option>
-            <option value="Immediate" {% if request.GET.urgency == 'Immediate' %}selected{% endif %}>Immediate</option>
-            <option value="Expected" {% if request.GET.urgency == 'Expected' %}selected{% endif %}>Expected</option>
-            <option value="Future" {% if request.GET.urgency == 'Future' %}selected{% endif %}>Future</option>
-            <option value="Past" {% if request.GET.urgency == 'Past' %}selected{% endif %}>Past</option>
-            <option value="Unknown" {% if request.GET.urgency == 'Unknown' %}selected{% endif %}>Unknown</option>
+            <option value="Immediate" {% if request.GET.urgency == "Immediate" %}selected{% endif %}>Immediate</option>
+            <option value="Expected" {% if request.GET.urgency == "Expected" %}selected{% endif %}>Expected</option>
+            <option value="Future" {% if request.GET.urgency == "Future" %}selected{% endif %}>Future</option>
+            <option value="Past" {% if request.GET.urgency == "Past" %}selected{% endif %}>Past</option>
+            <option value="Unknown" {% if request.GET.urgency == "Unknown" %}selected{% endif %}>Unknown</option>
         </select>
     </div>
+
     <div class="col-12 text-end">
-        <button type="submit" class="btn btn-primary mt-3">Filter</button>
+        <button class="btn btn-primary mt-3">Filter</button>
         <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Reset</a>
     </div>
+
 </form>
 
-<!-- ALERT TABLE -->
+
 {% if alerts %}
 <div class="table-responsive">
+
+    <!-- list of alerts -->
     <table class="table table-striped table-hover align-middle">
         <thead class="table-dark">
             <tr>
@@ -51,37 +59,44 @@
                 <th>Expires</th>
             </tr>
         </thead>
+
         <tbody>
         {% for alert in alerts %}
-            <tr class="{% if alert.severity|lower == 'severe' %}table-danger{% elif alert.severity|lower == 'moderate' %}table-warning{% elif alert.severity|lower == 'minor' %}table-info{% endif %}">
+            <tr class="
+                {% if alert.severity|lower == 'severe' %}table-danger
+                {% elif alert.severity|lower == 'moderate' %}table-warning
+                {% elif alert.severity|lower == 'minor' %}table-info
+                {% endif %}
+            ">
                 <td>{{ alert.event }}</td>
                 <td>{{ alert.area_desc }}</td>
                 <td>{{ alert.severity }}</td>
                 <td>{{ alert.urgency }}</td>
-                <td>{{ alert.sent|date:"Y-m-d H:i" }}</td>
-                <td>{{ alert.expires|date:"Y-m-d H:i" }}</td>
+                <td>{{ alert.sent|date:'Y-m-d H:i' }}</td>
+                <td>{{ alert.expires|date:'Y-m-d H:i' }}</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
 </div>
 
-<!-- DISASTER HEATMAP -->
+<!-- maps and charts -->
 <div class="mt-4 mb-4">
     {{ heatmap|safe }}
 </div>
 
-<!-- DISASTER EVENTS PER YEAR CHART -->
 <div class="mt-4 mb-4">
     {{ disaster_chart|safe }}
 </div>
 
-<!-- DISASTER EVENTS BY TYPE CHART -->
 <div class="mt-4 mb-4">
     {{ disaster_type_chart|safe }}
 </div>
 
 {% else %}
-<div class="alert alert-success">No active alerts at this time</div>
+<div class="alert alert-success">
+    No active alerts at this time
+</div>
 {% endif %}
+
 {% endblock %}

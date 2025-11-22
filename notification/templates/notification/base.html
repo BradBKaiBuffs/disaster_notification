@@ -6,59 +6,64 @@
 
     <title>Disaster Notifications Page</title>
 
-    <!-- BOOTSTRAP -->
+    <!-- bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
 </head>
+
 <body>
 
 <nav class="navbar navbar-dark bg-dark mb-4">
     <div class="container-fluid">
-        <!-- TITLE -->
+
         <span class="navbar-brand">Disaster Notifications Page</span>
+
         <div class="d-flex">
 
-            <!-- LINK TO DASHBOARD PAGE -->
+            <!-- dashboard link -->
             <a href="{% url 'dashboard' %}"
                class="btn btn-primary btn-sm me-2">
                 Dashboard
             </a>
 
-            <!-- LINK TO SUBSCRIPTION PAGE -->
+            <!-- subscription page link -->
             <a href="{% url 'subscribe' %}"
                class="btn btn-primary btn-sm me-2">
                 Subscribe
             </a>
 
-            <!-- LINK TO PERSONAL USER ALERTS PAGE -->
+            <!-- personal alerts page -->
             <a href="{% url 'user_alerts' %}"
                class="btn btn-primary btn-sm me-2">
                 User Alerts Page
             </a>
 
             {% if user.is_authenticated %}
-                
-->
+
                 {% if user.is_staff %}
+                    <!-- only accessible for admins who are signed in -->
                     <a href="/admin/" class="btn btn-primary btn-sm me-2">Admin</a>
                     <a href="/upload_csv/" class="btn btn-primary btn-sm me-2">Upload CSV</a>
                 {% endif %}
-
+>
                 <form method="POST" action="{% url 'logout' %}" class="d-inline">
                     {% csrf_token %}
                     <button class="btn btn-primary btn-sm me-2">Logout</button>
                 </form>
+
+                <!-- show username to the right of the links -->
                 <span class="navbar-text me-3">
                     Logged in as <strong>{{ user.username }}</strong>
                 </span>
+
             {% else %}
+                <!-- only shows up if not logged in -->
                 <a href="{% url 'login' %}" class="btn btn-success btn-sm">Login</a>
             {% endif %}
         </div>
     </div>
 </nav>
-<main class="container">
 
+<main class="container">
     {% block content %}
     {% endblock %}
 </main>

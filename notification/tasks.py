@@ -6,24 +6,24 @@ from celery import shared_task
 from dateutil.parser import isoparse
 # for sending email
 from django.core.mail import send_mail
-from .models import NoaaAlert
+from .models import NoaaAlert, UserAreaSubscription, AlertNotificationTracking
 from django.conf import settings
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 
 # noaa api url for active alerts
 API_URL = "https://api.weather.gov/alerts/active"
 
 
-# turns iso formatted date text into datetime
+# turns iso formatted date text into datetime used for the grab_noaa_alerts_task()
 def parse_noaa_datetime(dt_str):
     # check if string exists
     if dt_str:
         try:
             return isoparse(dt_str)
         except (ValueError, TypeError):
-            # return none because datetime could not be parsed
             return None
-    # return none if dt_str was empty or none
     return None
 
 
@@ -36,47 +36,39 @@ def grab_noaa_alerts_task():
             "User-Agent": "(disaster_notification, bkai1@buffs.wtamu.edu)"
         }
 
-        # makes the api request to noaa with the user agent included
         response = requests.get(API_URL, headers=headers)
 
-        # raises an error if the status code is not 200
+        # raises an error
         response.raise_for_status()
 
-        # turn the json text into dictionary
+        # turn the json text into a dictionary
         data = response.json()
 
-        # grab the list of "features" which hold alert details
+        # grab the list of features which hold alert details
         features = data.get("features", [])
 
-        # counters
+        # counters so I know how many were created or processed with each task job
         alerts_processed = 0
         alerts_created = 0
 
-        # loop each alert
         for feature in features:
 
-            # grab the properties dictionary with alert info
+            # grab the properties
             prop = feature.get("properties", {})
 
-            # every alert has an id which we use as primary key
+            # every alert appears to have a long unique id which is used as a primary key
             alert_id = prop.get("id")
 
             # skip if missing id
             if not alert_id:
                 continue
 
-            # build dictionary for updating or creating the NoaaAlert object
+            # dictionary for updating or creating the NoaaAlert object
             defaults_for_model = {
-                # geometry information or {} if missing
+                # for the below added "" or {} in case data is missing as I decided to pull all entries 
                 "geometry": feature.get("geometry") or {},
-
-                # area description text that includes cities
                 "area_desc": prop.get("areaDesc", ""),
-
-                # geocode information for county/state/etc
                 "geocode": prop.get("geocode", {}),
-
-                # zones affected by this disaster alert
                 "affected_zones": prop.get("affectedZones", []),
 
                 # converting timestamp text to datetime objects
@@ -86,57 +78,48 @@ def grab_noaa_alerts_task():
                 "expires": parse_noaa_datetime(prop.get("expires")),
                 "ends": parse_noaa_datetime(prop.get("ends")),
 
-                # message fields from noaa
                 "status": prop.get("status", ""),
                 "message_type": prop.get("messageType", ""),
-
-                # these categories describe how bad or urgent the disaster alert is
                 "category": prop.get("category", ""),
                 "severity": prop.get("severity", ""),
                 "certainty": prop.get("certainty", ""),
                 "urgency": prop.get("urgency", ""),
-
-                # event name like tornado warning, flood alert, etc
                 "event": prop.get("event", ""),
-
-                # sender name
                 "sender_name": prop.get("senderName", ""),
-
                 "headline": prop.get("headline") or "",
                 "description": prop.get("description") or "",
                 "instruction": prop.get("instruction") or "",
                 "response": prop.get("response") or "",
-
-                # parameters is a dictionary of extra values noaa sometimes includes
                 "parameters": prop.get("parameters", {}),
             }
 
             # creates or updates the alert in database
-            # update_or_create looks for id=alert_id and updates it
-            # if not found it creates a new row
+            # update_or_create looks for id=alert_id and updates it and if not found it creates a new row
             obj, created = NoaaAlert.objects.update_or_create(
                 id=alert_id,
                 defaults=defaults_for_model,
             )
 
-            # add one for each processed
+            if created:
+                notify_users_task(obj, "new")
+            else:
+                notify_users_task(obj, "update")
+
             alerts_processed += 1
 
-            # add one for each created
             if created:
                 alerts_created += 1
 
-        # return a summary message that celery can log
-        return f"processed = {alerts_processed}, created = {alerts_created}"
+        return f"Processed = {alerts_processed}, Created = {alerts_created}"
 
     # network exception
     except requests.RequestException as e:
         return f"{e}"
 
-    # catching any other exception inside entire task
     except Exception as e:
         return f"{e}"
-    
+
+
 # testing for now
 # will use this for emailing
 @shared_task(bind=True)
@@ -155,7 +138,7 @@ def send_email_task(self, subject, message, to_email):
     
 # carriers to be used for task
 carrier_gateways = {
-    # "att": "txt.att.net" no longer works
+    "att": "txt.att.net",
     "Verizon": "vtext.com",
     "T-Mobile": "tmomail.net",
     "Sprint": "messaging.sprintpcs.com",
@@ -168,16 +151,15 @@ carrier_gateways = {
 # sends SMS messages using gmail
 @shared_task
 def send_sms_task(to_number, carrier, message):
-    # check
+    # check the carrier table
     if carrier not in carrier_gateways:
         return "Carrier not found"
     
     gateway = carrier_gateways[carrier]
 
-    # create the email
+    # create the email address that will be used to send via gmail
     sms_email = f"{to_number}@{gateway}"
 
-    # connect to gmail stemp
     try:
         send_mail(
             subject="",
@@ -189,3 +171,95 @@ def send_sms_task(to_number, carrier, message):
         return "Sent SMS"
     except Exception as e:
         return f"Failed: {str(e)}"
+    
+# message task for the alert messages for text and email
+def alert_message_task(alert):
+    return (
+        f"Alert Type: {alert.event}\n"
+        f"Area: {alert.area_desc}\n\n"
+        f"Description:\n{alert.description}\n\n"
+        f"Instructions:\n{alert.instruction}\n\n"
+        f"Status: {alert.status}\n"
+        f"Severity: {alert.severity}\n"
+        f"Certainty: {alert.certainty}\n"
+        f"Urgency: {alert.urgency}\n\n"
+        f"Sent: {alert.sent}\n"
+        f"Effective: {alert.effective}\n"
+        f"Onset: {alert.onset}\n"
+        f"Expires: {alert.expires}\n"
+    )
+
+# task checks for all user subscriptions for alerts and sends out messages
+def notify_users_task(alert, alert_kind):
+    message = alert_message_task(alert)
+
+    subs = UserAreaSubscription.objects.all()
+
+    # for testing, pushes a test alert to all
+    testing = "test" in alert.event.lower()
+
+    for sub in subs:
+
+        if not testing:
+
+            if sub.area.lower() not in alert.area_desc.lower():
+                continue
+
+            if sub.notification_type != "all" and sub.notification_type != alert_kind:
+                continue
+
+        if AlertNotificationTracking.objects.filter(user=sub.user, alert=alert).exists():
+            continue
+        
+        if sub.user.email:
+            try:
+                send_mail(
+                    f"{alert.event} Alert",
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [sub.user.email],
+                    fail_silently=True
+                )
+            except:
+                pass
+
+        # send sms if user entered carrier
+        if sub.phone_number and sub.carrier:
+            email_gateway = f"{sub.phone_number}@{sub.carrier}"
+            try:
+                send_mail(
+                    "",  # subject not needed for sms
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [email_gateway],
+                    fail_silently=True
+                )
+            except:
+                pass
+
+        # store tracking so user does not get duplicate alerts
+        AlertNotificationTracking.objects.create(
+            user=sub.user,
+            alert=alert
+        )
+
+# checks for alerts that are close to expiration and notifies users
+@shared_task
+def expiring_alerts_task():
+
+    now = timezone.now()
+
+    # cutoff for the window of alerts that expire within the next 30 minutes
+    cutoff = now + timedelta(minutes=30)
+
+    # grabs all that have not expired yet
+    expiring = NoaaAlert.objects.filter(
+        expires__isnull=False,
+        expires__gt=now,
+        expires__lte=cutoff
+    )
+
+    for alert in expiring:
+        notify_users_task(alert, "expires")
+
+    return f"{expiring.count()} alerts for expiration"

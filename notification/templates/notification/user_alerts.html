@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <!-- TITLE -->
+
     <h2>Your Alert Subscriptions</h2>
 
     {% if messages %}
@@ -11,7 +11,8 @@
             <div class="alert alert-info">{{ msg }}</div>
         {% endfor %}
     {% endif %}
-    <!-- TABLE OF SUBS -->
+
+    <!-- list of current subs -->
     <table class="table table-striped mt-3">
         <thead>
             <tr>
@@ -19,6 +20,7 @@
                 <th>State</th>
                 <th>County</th>
                 <th>Phone</th>
+                <th>Carrier</th>
                 <th>Notification Type</th>
                 <th></th>
             </tr>
@@ -30,6 +32,7 @@
                     <td>{{ sub.state }}</td>
                     <td>{{ sub.county }}</td>
                     <td>{{ sub.phone_number }}</td>
+                    <td>{{ sub.carrier }}</td>
                     <td>{{ sub.get_notification_type_display }}</td>
                     <td>
                         <a class="btn btn-sm btn-danger"
@@ -39,14 +42,13 @@
                     </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="6"> No subscriptions found</td></tr>
+                <tr><td colspan="7">no subscriptions found right now</td></tr>
             {% endfor %}
         </tbody>
     </table>
 
-    
+    <!-- filter for the charts -->
     <form method="get" class="mb-3 w-50">
-        <!-- STATE DROP DOWN -->
         <label class="form-label">Select State</label>
         <select name="state" id="graph-state" class="form-control">
             <option value="">Select State</option>
@@ -55,7 +57,6 @@
             {% endfor %}
         </select>
 
-        <!-- COUNTY DROP DOWN -->
         <label class="form-label mt-2">Select County</label>
         <select name="county" id="graph-county" class="form-control">
             <option value="">Select County</option>
@@ -71,13 +72,13 @@
     {% if county_event_type_chart %}
         {{ county_event_type_chart|safe }}
     {% endif %}
-    
+
+    <!-- adds new subscription -->
     <h4 class="mt-4">Add New Subscription</h4>
 
-    <form method="POST" class="card p-3 shadow-sm w-50">
+    <form method="POST" action="{% url 'user_alerts' %}" class="card p-3 shadow-sm w-50">
         {% csrf_token %}
 
-        <!-- AREA -->
         <label class="form-label">Area</label>
         <input type="text"
                name="area"
@@ -85,13 +86,13 @@
                placeholder="Type City or Area"
                list="area-list">
 
+        <!-- shows previous areas user typed -->
         <datalist id="area-list">
             {% for sub in subscriptions %}
                 <option value="{{ sub.area }}"></option>
             {% endfor %}
         </datalist>
 
-        <!-- STATE -->
         <label class="form-label">State</label>
         <select id="state-select" name="state" class="form-control">
             <option value="">Select State</option>
@@ -100,21 +101,28 @@
             {% endfor %}
         </select>
 
-        <!-- COUNTY -->
         <label class="form-label mt-2">County</label>
         <select id="county-select" name="county" class="form-control">
             <option value="">Select County</option>
         </select>
 
-        <!-- PHONE NUMBER -->
         <label class="form-label mt-3">Phone Number</label>
         <input type="text"
                name="phone_number"
-               value="{{ form.phone_number.value }}"
                class="form-control"
                placeholder="Enter phone number">
 
-         <!-- NOTIFICATION TYPE-->
+        <label class="form-label mt-3">Carrier</label>
+        <select name="carrier" class="form-control">
+            <option value="">Select Carrier</option>
+            <option value="vtext.com">Verizon</option>
+            <option value="txt.att.net">AT&amp;T</option>
+            <option value="tmomail.net">T-Mobile</option>
+            <option value="messaging.sprintpcs.com">Sprint</option>
+            <option value="mms.uscc.net">US Cellular</option>
+            <option value="message.alltel.com">AllTel</option>
+        </select>
+
         <label class="form-label mt-3">Notification Type</label>
         {{ form.notification_type }}
 
@@ -123,44 +131,29 @@
 </div>
 
 <script>
-
-    // listens for when user picks a state from the dropdown
+    // when a state is selected it matches the counties for it
     document.getElementById("state-select").addEventListener("change", function () {
 
-        // grabs the state selected by the user and uses it to call the backend to get counties
         let state = this.value;
 
-        // call my django ajax url and sends the selected state as a querystring
+        // asking backend for county list
         fetch(`/ajax/get-counties/?state=${state}`)
-
-            // response.json() turns the server response into a js object
-            .then(response => response.json())
-
-            // use the returned data to update county dropdown
+            .then(r => r.json())
             .then(data => {
 
-                // grab the county select box so we can update it
                 let countySelect = document.getElementById("county-select");
 
-                // wipe old counties so list is clean first then set innerHTML so it resets back to default text
-                countySelect.innerHTML = '<option value="">select county</option>';
+                // reset dropdown
+                countySelect.innerHTML = '<option value="">Select County</option>';
 
-                // now loop all the counties
-                // data.counties is a list of county names
+                // add county options
                 data.counties.forEach(ct => {
-
-                    // create an option tag in javascript
                     let opt = document.createElement("option");
-
-                    // set the value and text for this county option
                     opt.value = ct;
                     opt.textContent = ct;
-
-                    // put the new option into the dropdown
                     countySelect.appendChild(opt);
                 });
             });
-
     });
 </script>
 

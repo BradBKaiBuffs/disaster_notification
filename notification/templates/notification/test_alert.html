@@ -1,0 +1,48 @@
+{% extends "notification/base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2>Test Disaster Alert System</h2>
+
+    {% if message_sent %}
+        <div class="alert alert-success">
+            {{ message_sent }}
+        </div>
+    {% endif %}
+
+    <form method="post" class="card p-4 shadow-sm mt-3">
+        {% csrf_token %}
+
+        <!-- area -->
+        <label class="form-label">Area / City / Region</label>
+        <input type="text"
+               name="area"
+               class="form-control"
+               placeholder="Example: Amarillo, TX"
+               required>
+
+        <!-- message -->
+        <label class="form-label mt-3">Alert Message</label>
+        <textarea name="message"
+                  class="form-control"
+                  rows="4"
+                  placeholder="Type the alert description here..."
+                  required></textarea>
+
+        <!-- alert type -->
+        <label class="form-label mt-3">Alert Type</label>
+        <select name="alert_type" class="form-control" required>
+            <option value="new">New Alert</option>
+            <option value="update">Update Alert</option>
+            <option value="expires">Expiring Soon</option>
+            <option value="all">Send as All Types</option>
+        </select>
+
+        <button class="btn btn-primary mt-4">Send Test Alert</button>
+    </form>
+
+</div>
+
+{% endblock %}

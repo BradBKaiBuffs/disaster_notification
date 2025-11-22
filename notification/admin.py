@@ -32,10 +32,7 @@ class UserAreaSubscriptionAdmin(admin.ModelAdmin):
 @admin.register(AlertNotificationTracking)
 class AlertNotificationTrackingAdmin(admin.ModelAdmin):
 
-    # shows who got what alert
     list_display = ("user", "alert", "sent_at")
-
-    # helps filter entries by user
     list_filter = ("user",)
 
 

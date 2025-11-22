@@ -12,34 +12,21 @@ class NoaaAlert(models.Model):
     headline = models.TextField(null=True, blank=True)
     description = models.TextField()
     instruction = models.TextField(null=True, blank=True)
-
-    # core response info
     response = models.CharField(max_length=50, null=True, blank=True)
     affected_zones = models.JSONField(default=list)
     geometry = models.JSONField(default=dict, null=True, blank=True)
-
-    # message info
     status = models.CharField(max_length=50)
     message_type = models.CharField(max_length=50)
-
-    # categories
     category = models.CharField(max_length=50)
     severity = models.CharField(max_length=50)
     certainty = models.CharField(max_length=50)
     urgency = models.CharField(max_length=50)
-
-    # timestamps from the api
     sent = models.DateTimeField()
     effective = models.DateTimeField()
     onset = models.DateTimeField(null=True, blank=True)
     expires = models.DateTimeField(null=True, blank=True)
     ends = models.DateTimeField(null=True, blank=True)
-
-    # sender info
-    sender_name = models.CharField(
-        max_length=255,
-        help_text="the name of the nws office that sent the alert.",
-    )
+    sender_name = models.CharField(max_length=255)
 
     # json fields for nested or variable data
     geocode = models.JSONField(default=dict)
@@ -54,27 +41,24 @@ class NoaaAlert(models.Model):
 class UserAreaSubscription(models.Model):
     # holds the notification choices that the user can pick
     NOTIFY_CHOICES = [
-        ("new", "Notify on new alert"),
-        ("update", "Notify on update"),
-        ("expires", "Notify before expiry"),
-        ("all", "All notifications"),
+        ("New", "Notify on new alert"),
+        ("Update", "Notify on update"),
+        ("Expires", "Notify before expiration"),
+        ("All", "All notifications"),
     ]
 
     # links each subscription to a real user account
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    # the area
     area = models.CharField(max_length=255)
 
-    # stores county
-    # already had fields during tests so have to put in a default space to make it work
+    # already had users in the database during tests so have to put in a default space for county and state to make it work
     county = models.CharField(max_length=255, default='')
     state = models.CharField(max_length=255, default='')
 
-    # phone number for sending sms alerts
     phone_number = models.CharField(max_length=20)
 
-    # carrier information
+    # similar situation with state and county so I had to put in default parameters
     carrier = models.CharField(max_length=50, default="", blank=True)
 
     # saves what notification type the user wants
@@ -87,7 +71,6 @@ class UserAreaSubscription(models.Model):
     # timestamp when created
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # shows a readable label when looking at this model
     def __str__(self):
         return f"{self.user.username} -> {self.area}"
 
@@ -103,7 +86,6 @@ class AlertNotificationTracking(models.Model):
     # saves the date and time the alert was sent out
     sent_at = models.DateTimeField(auto_now_add=True)
 
-    # shows readable label when looking at the info
     def __str__(self):
         return f"{self.user.username} -> {self.alert.id}"
 
@@ -112,15 +94,9 @@ class AlertNotificationTracking(models.Model):
 class StormEvent(models.Model):
     # uses the event id from the csv as the primary key
     event_id = models.CharField(primary_key=True, max_length=50)
-
-    # type of weather event
     event_type = models.CharField(max_length=100)
-
-    # state and county where the event happened
     state = models.CharField(max_length=50)
     county = models.CharField(max_length=100)
-
-    # date and time
     begin_year = models.IntegerField(default=1)
     begin_month = models.IntegerField(default=1)
     end_year = models.IntegerField(default=1)
@@ -129,5 +105,4 @@ class StormEvent(models.Model):
     end_time = models.IntegerField(default=1)
 
     def __str__(self):
-        # show event, state, and beginning year for the eye test
         return f"{self.event_type} in {self.state} ({self.begin_year})"

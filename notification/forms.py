@@ -4,16 +4,14 @@ from django.contrib.auth.models import User
 from .models import UserAreaSubscription
 
 
-# lets users create or update their alert preferences
+# lets users create or update their alert preferences with this form
 class UserAreaSubscriptionForm(forms.ModelForm):
 
     class Meta:
         model = UserAreaSubscription
 
-        # these are the fields the user can fill out
-        fields = ["area", "state", "county", "phone_number", "notification_type"]
+        fields = ["area", "state", "county", "phone_number", "carrier", "notification_type"]
 
-        # widgets
         widgets = {
             "area": forms.TextInput(attrs={
                 "class": "form-control",
@@ -31,26 +29,24 @@ class UserAreaSubscriptionForm(forms.ModelForm):
                 "class": "form-control",
                 "placeholder": "Type phone number",
             }),
+            "carrier": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Type carrier"
+            }),
             "notification_type": forms.Select(attrs={
                 "class": "form-control",
             }),
         }
 
-# user creation form
-# uses django built-in security for registration
+# user creation form that uses django built-in security for registration
 class UserRegistrationForm(UserCreationForm):
 
-    # require email
     email = forms.EmailField(required=True)
 
     class Meta:
         model = User
-
-        # include username, email and password fields
         fields = ["username", "email", "password1", "password2"]
 
-# upload form for csv files
+# upload form for csv files from the admin site
 class CsvUploadForm(forms.Form):
-
-    # csv upload input
     file = forms.FileField(label="upload csv file")
