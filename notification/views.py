@@ -713,13 +713,29 @@ def test_sms_view(request):
         carrier = request.POST.get("carrier")
         alert_kind = request.POST.get("alert_kind")
 
-        send_sms_task.delay(phone_number, carrier, alert_kind)
+        notify_label = alert_kind.capitalize()
+        site_link = "https://disasternotification-production.up.railway.app"
+        sms_message = (
+            f"You have a {notify_label} notification from your subscription. See details here: {site_link}"
+        )
 
-        result = "Test SMS sent."
+        sms_email = f"{phone_number}@{carrier}"
+
+        try:
+            send_mail(
+                subject="",
+                message=sms_message,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[sms_email],
+                fail_silently=False
+            )
+            result = "SMS sent"
+        except Exception as e:
+            result = f"SMS failed: {str(e)}"
 
     return render(request, "notification/test_sms.html", {
         "result": result,
-        "carriers": CARRIER_NAMES
+        "carriers": CARRIER_NAMES,
     })
 
 

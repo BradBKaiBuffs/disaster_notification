@@ -157,7 +157,7 @@ def send_sms_task(phone_number, carrier_domain, alert_kind):
     # debugging
     print("phone_number", phone_number)
     print("carrier domain", carrier_domain)
-    
+
     try:
         send_mail(
             # subject is not needed for sms
@@ -217,22 +217,27 @@ def notify_users_task(alert, alert_kind):
                     subject=f"{alert.event} Alert",
                     message=message,
                     from_email=settings.EMAIL_HOST_USER,
-                    receipient_list=[sub.user.email],
+                    recipient_list=[sub.user.email],
                     fail_silently=False
                 )
             except:
                 pass
 
-        # sends sms with the information put in by the user at the time of subscription
+        # sends sms with the information put in by the user at the time of subscription and does not run a celery task since there was network failures occurring since it looks like SMTP fails for sms
         if sub.phone_number and sub.carrier:
-            email_gateway = f"{sub.phone_number}@{sub.carrier}"
+            sms_message = (
+                f"You have a {alert_kind.capitalize()} notification from your subscription. See details here: https://disasternotification-production.up.railway.app"
+            )
+
+            sms_email = f"{sub.phone_number}@{sub.carrier}"
+
             try:
                 send_mail(
-                    send_sms_task.delay(
-                        sub.phone_number,
-                        sub.carrier,
-                        alert_kind
-                    )
+                    subject="",
+                    message=sms_message,
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[sms_email],
+                    fail_silently=True
                 )
             except:
                 pass
