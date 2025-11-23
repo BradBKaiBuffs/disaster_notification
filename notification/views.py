@@ -30,7 +30,7 @@ from plotly.offline import plot
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .tasks import send_email_task, send_sms_task, notify_users_task, short_sms
+from .tasks import send_email_task, send_sms_task, notify_users_task
 from django.utils import timezone
 import uuid
 
@@ -706,7 +706,6 @@ def test_email_view(request):
 # testing task that will be used for live alert updates as need to see what type of message is being sent out to sms
 @staff_member_required
 def test_sms_view(request):
-
     result = None
 
     if request.method == "POST":
@@ -714,16 +713,7 @@ def test_sms_view(request):
         carrier = request.POST.get("carrier")
         alert_kind = request.POST.get("alert_kind")
 
-        # debugging
-        print("Phone:", phone_number)
-        print("Carrier Submitted:", carrier)
-        print("Alert Kind:", alert_kind)
-
-        sms_message = short_sms(alert_kind)
-
-        send_sms_task.delay(phone_number, carrier, sms_message)
-
-        print("Message:", sms_message)
+        send_sms_task.delay(phone_number, carrier, alert_kind)
 
         result = "Test SMS sent."
 

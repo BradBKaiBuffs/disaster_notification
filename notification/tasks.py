@@ -137,42 +137,33 @@ def send_email_task(self, subject, message, to_email):
         return f"Sent failed: {e}"
 
 # ran into a situation where sms was getting cut off so for now just giving a status update and link to site
-def short_sms(alert_kind):
+# sends SMS messages using gmail
+@shared_task
+def send_sms_task(phone_number, carrier_domain, alert_kind):
+
     notify_label = alert_kind.capitalize()
     site_link = "disasternotification-production.up.railway.app"
-    return (
+    sms_message = (
         f"You have a {notify_label} notification from your subscription. See details here: {site_link}"
     )
 
-# carriers to be used for task
-CARRIER_GATEWAYS = {
-    "A&TT": "txt.att.net",
-    "Verizon": "vtext.com",
-    "T-Mobile": "tmomail.net",
-    "Sprint": "messaging.sprintpcs.com",
-    "Boost": "myboostmobile.com",
-    "Cricket": "sms.cricketwireless.net",
-    "GoogleFi": "msg.fi.google.com",
-    "US Mobile": "tmomail.net"
-}
-
-# sends SMS messages using gmail
-@shared_task
-def send_sms_task(to_number, carrier, message):
-    # check the carrier table
-    if carrier not in CARRIER_GATEWAYS:
-        return "Carrier not found"
-    
-    gateway = CARRIER_GATEWAYS[carrier]
+    # debugging
+    print("notify_label", alert_kind)
+    print("sms_message", sms_message)
 
     # create the email address that will be used to send via gmail
-    sms_email = f"{to_number}@{gateway}"
+    sms_email = f"{phone_number}@{carrier_domain}"
 
+    # debugging
+    print("phone_number", phone_number)
+    print("carrier domain", carrier_domain)
+    
     try:
         send_mail(
+            # subject is not needed for sms
             subject="",
-            message=message,
-            from_email=None,
+            message=sms_message,
+            from_email=settings.EMAIL_HOST_USER,
             recipient_list=[sms_email],
             fail_silently=False
         )
@@ -180,6 +171,7 @@ def send_sms_task(to_number, carrier, message):
     except Exception as e:
         return f"Failed: {str(e)}"
     
+   
 # message task for the alert messages for text and email
 def alert_message_task(alert):
     return (
@@ -222,10 +214,10 @@ def notify_users_task(alert, alert_kind):
         if sub.user.email:
             try:
                 send_mail(
-                    f"{alert.event} Alert",
-                    message,
-                    settings.EMAIL_HOST_USER,
-                    [sub.user.email],
+                    subject=f"{alert.event} Alert",
+                    message=message,
+                    from_email=settings.EMAIL_HOST_USER,
+                    receipient_list=[sub.user.email],
                     fail_silently=False
                 )
             except:
@@ -236,12 +228,11 @@ def notify_users_task(alert, alert_kind):
             email_gateway = f"{sub.phone_number}@{sub.carrier}"
             try:
                 send_mail(
-                    # subject not needed for sms
-                    "",  
-                    short_sms(alert),
-                    settings.EMAIL_HOST_USER,
-                    [email_gateway],
-                    fail_silently=True
+                    send_sms_task.delay(
+                        sub.phone_number,
+                        sub.carrier,
+                        alert_kind
+                    )
                 )
             except:
                 pass
