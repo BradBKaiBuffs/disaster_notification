@@ -32,7 +32,7 @@
                     <td>{{ sub.state }}</td>
                     <td>{{ sub.county }}</td>
                     <td>{{ sub.phone_number }}</td>
-                    <td>{{ sub.carrier }}</td>
+                    <td>{{ sub.carrier_label }}</td>
                     <td>{{ sub.get_notification_type_display }}</td>
                     <td>
                         <a class="btn btn-sm btn-danger"
@@ -46,6 +46,50 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Active alerts from active subscriptions -->
+    <hr class="my-4">
+
+    <h3>Active Alerts in Your Subscribed Areas</h3>
+
+    {% if active_alerts %}
+    <div class="table-responsive mt-3">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Event</th>
+                    <th>Area</th>
+                    <th>Severity</th>
+                    <th>Urgency</th>
+                    <th>Sent</th>
+                    <th>Expires</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for alert in active_alerts %}
+                <tr class="
+                    {% if alert.severity|lower == 'severe' %}table-danger
+                    {% elif alert.severity|lower == 'moderate' %}table-warning
+                    {% elif alert.severity|lower == 'minor' %}table-info
+                    {% endif %}
+                ">
+                    <td>{{ alert.event }}</td>
+                    <td>{{ alert.area_desc }}</td>
+                    <td>{{ alert.severity }}</td>
+                    <td>{{ alert.urgency }}</td>
+                    <td>{{ alert.sent|date:'Y-m-d H:i' }}</td>
+                    <td>{{ alert.expires|date:'Y-m-d H:i' }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-success mt-3">
+        No active alerts in your subscribed areas
+    </div>
+    {% endif %}
 
     <!-- filter for the charts -->
     <form method="get" class="mb-3 w-50">
@@ -132,7 +176,7 @@
 
 <script>
     // when a state is selected it matches the counties for it
-    document.getElementById("state-select").addEventListener("change", function () {
+    document.getElementById("graph-state").addEventListener("change", function () {
 
         let state = this.value;
 
@@ -141,7 +185,7 @@
             .then(r => r.json())
             .then(data => {
 
-                let countySelect = document.getElementById("county-select");
+                let countySelect = document.getElementById("graph-county");
 
                 // reset dropdown
                 countySelect.innerHTML = '<option value="">Select County</option>';

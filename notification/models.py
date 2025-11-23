@@ -36,6 +36,14 @@ class NoaaAlert(models.Model):
         # simple readable label for admin and logs
         return f"{self.event} ({self.severity})"
 
+CARRIER_NAMES = {
+    "vtext.com": "Verizon",
+    "txt.att.net": "AT&T",
+    "tmomail.net": "T-Mobile",
+    "messaging.sprintpcs.com": "Sprint",
+    "mms.uscc.net": "US Cellular",
+    "message.alltel.com": "AllTel",
+}
 
 # stores what area a user wants to follow for alerts
 class UserAreaSubscription(models.Model):
@@ -60,6 +68,10 @@ class UserAreaSubscription(models.Model):
 
     # similar situation with state and county so I had to put in default parameters
     carrier = models.CharField(max_length=50, default="", blank=True)
+
+    # pulled the value like vtext.com instead of Verizon on the Alert Subscriptions page
+    def carrier_label(self):
+        return CARRIER_NAMES.get(self.carrier, self.carrier)
 
     # saves what notification type the user wants
     notification_type = models.CharField(

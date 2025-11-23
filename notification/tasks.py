@@ -137,7 +137,7 @@ def send_email_task(self, subject, message, to_email):
         return f"Sent failed: {e}"
     
 # carriers to be used for task
-carrier_gateways = {
+CARRIER_GATEWAYS = {
     "att": "txt.att.net",
     "Verizon": "vtext.com",
     "T-Mobile": "tmomail.net",
@@ -152,10 +152,10 @@ carrier_gateways = {
 @shared_task
 def send_sms_task(to_number, carrier, message):
     # check the carrier table
-    if carrier not in carrier_gateways:
+    if carrier not in CARRIER_GATEWAYS:
         return "Carrier not found"
     
-    gateway = carrier_gateways[carrier]
+    gateway = CARRIER_GATEWAYS[carrier]
 
     # create the email address that will be used to send via gmail
     sms_email = f"{to_number}@{gateway}"

@@ -125,7 +125,7 @@ CELERY_RESULT_BACKEND = 'django-db'
 # Celery beat schedule
 CELERY_BEAT_SCHEDULE = {
     'grab-noaa-alerts-every-10-mins': {
-        'task': 'notification.tasks.grab_noaa_alerts',
+        'task': 'notification.tasks.grab_noaa_alerts_task',
         'schedule': crontab(minute='*/10')
     },
 }

@@ -130,7 +130,7 @@ def heatmap_chart():
     return plot(fig, output_type="div")
 
 
-# main dashboard page view that displays charts when selecting a county/state and allows filtering of existing alerts
+# main dashboard page view that displays charts when selecting a county/state
 def dashboard_view(request):
 
     disaster_data = grab_disaster_events_per_year()
@@ -313,12 +313,12 @@ def grab_county_event_type_data(state, county):
 # bar chart for disaster types for when a user selects a county on user page
 def county_event_type_chart(state, county):
 
-  disaster_types = grab_county_event_type_data(state, county)
+  combined_type = grab_county_event_type_data(state, county)
 
   disaster_types = []
   disaster_totals = []
 
-  for t in type:
+  for t in combined_type:
     disaster_types.append(t["event_type"])
     disaster_totals.append(t["total"])
 
@@ -496,6 +496,20 @@ def subscribe_view(request):
 # personalized user page view
 def user_alerts_view(request):
 
+    # grabs all subscriptions for the logged in user and is used for alerts and charts
+    subscriptions = UserAreaSubscription.objects.filter(user=request.user)
+
+    # pull active alerts that user subscribed to
+    active_alerts = []
+
+    all_alerts = NoaaAlert.objects.all()
+
+    for alert in all_alerts:
+        for sub in subscriptions:
+            if sub.area.lower() in alert.area_desc.lower():
+                active_alerts.append(alert)
+                break
+
     # grab all the states from StormEvent model
     states = (
         StormEvent.objects
@@ -516,10 +530,6 @@ def user_alerts_view(request):
             .distinct()
             .order_by("county")
         )
-
-    # grabs all subscriptions for the logged in user
-    # allows county selection to view disaster charts
-    subscriptions = UserAreaSubscription.objects.filter(user=request.user)
 
     selected_county = request.GET.get("county", "").strip()
 
@@ -579,6 +589,7 @@ def user_alerts_view(request):
         "county_map_json": json.dumps(county_map),
         "selected_type": selected_type,
         "form": form,
+        "active_alerts": active_alerts,
     })
 
 
@@ -652,6 +663,7 @@ def upload_csv_view(request):
 
 
 # not used anymore but keeping it for future use
+@staff_member_required
 def test_email_view(request):
 
     message_sent = None
@@ -670,6 +682,7 @@ def test_email_view(request):
     })
 
 # not used anymore but keeping it for future use
+@staff_member_required
 def test_sms_view(request):
 
     message_sent = None
@@ -689,6 +702,7 @@ def test_sms_view(request):
     })
 
 # for testing alerts at initial stage of development
+@staff_member_required
 def test_alert_view(request):
 
     # create the primary key using uuid
