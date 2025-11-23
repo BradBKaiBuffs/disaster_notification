@@ -135,10 +135,18 @@ def send_email_task(self, subject, message, to_email):
         return f"Sent to {to_email}"
     except Exception as e:
         return f"Sent failed: {e}"
-    
+
+# ran into a situation where sms was getting cut off so for now just giving a status update and link to site
+def short_sms(alert_kind):
+    notify_label = alert_kind.capitalize()
+    site_link = "disasternotification-production.up.railway.app"
+    return (
+        f"You have a {notify_label} notification from your subscription. See details here: {site_link}"
+    )
+
 # carriers to be used for task
 CARRIER_GATEWAYS = {
-    "att": "txt.att.net",
+    "A&TT": "txt.att.net",
     "Verizon": "vtext.com",
     "T-Mobile": "tmomail.net",
     "Sprint": "messaging.sprintpcs.com",
@@ -218,18 +226,19 @@ def notify_users_task(alert, alert_kind):
                     message,
                     settings.EMAIL_HOST_USER,
                     [sub.user.email],
-                    fail_silently=True
+                    fail_silently=False
                 )
             except:
                 pass
 
-        # send sms if user entered carrier
+        # sends sms with the information put in by the user at the time of subscription
         if sub.phone_number and sub.carrier:
             email_gateway = f"{sub.phone_number}@{sub.carrier}"
             try:
                 send_mail(
-                    "",  # subject not needed for sms
-                    message,
+                    # subject not needed for sms
+                    "",  
+                    short_sms(alert),
                     settings.EMAIL_HOST_USER,
                     [email_gateway],
                     fail_silently=True

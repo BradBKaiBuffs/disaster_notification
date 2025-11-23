@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 # using Count to annotate and count rows
 from django.db.models import Count
-from .models import NoaaAlert, UserAreaSubscription, StormEvent, AlertNotificationTracking
+from .models import NoaaAlert, UserAreaSubscription, StormEvent, AlertNotificationTracking, CARRIER_NAMES
 from .forms import UserAreaSubscriptionForm, UserRegistrationForm, CsvUploadForm
 # sends a forbidden response when someone not allowed opens a page
 from django.http import HttpResponseForbidden
@@ -30,7 +30,7 @@ from plotly.offline import plot
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .tasks import send_email_task, send_sms_task, notify_users_task
+from .tasks import send_email_task, send_sms_task, notify_users_task, short_sms
 from django.utils import timezone
 import uuid
 
@@ -525,7 +525,7 @@ def user_alerts_view(request):
         .exclude(event__icontains="test")
     )
 
-    # puts the alerts into all_alerts
+    # puts the alerts into all alerts
     for alert in all_alerts:
         for sub in subscriptions:
             if sub.area.lower() in alert.area_desc.lower():
@@ -702,25 +702,36 @@ def test_email_view(request):
         "message_sent": message_sent
     })
 
-# not used anymore but keeping it for future use
+
+# testing task that will be used for live alert updates as need to see what type of message is being sent out to sms
 @staff_member_required
 def test_sms_view(request):
 
-    message_sent = None
+    result = None
 
     if request.method == "POST":
-
-        phone = request.POST.get("phone")
+        phone_number = request.POST.get("phone_number")
         carrier = request.POST.get("carrier")
-        msg = request.POST.get("message")
+        alert_kind = request.POST.get("alert_kind")
 
-        send_sms_task.delay(phone, carrier, msg)
+        # debugging
+        print("Phone:", phone_number)
+        print("Carrier Submitted:", carrier)
+        print("Alert Kind:", alert_kind)
 
-        message_sent = "SMS Sent to Celery Worker"
+        sms_message = short_sms(alert_kind)
 
-    return render( request, "notification/test_sms.html", {
-        "message_sent": message_sent
+        send_sms_task.delay(phone_number, carrier, sms_message)
+
+        print("Message:", sms_message)
+
+        result = "Test SMS sent."
+
+    return render(request, "notification/test_sms.html", {
+        "result": result,
+        "carriers": CARRIER_NAMES
     })
+
 
 # for testing alerts at initial stage of development
 @staff_member_required

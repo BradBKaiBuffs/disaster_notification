@@ -1,38 +1,32 @@
 {% extends "notification/base.html" %}
 
 {% block content %}
+<h2>Test SMS</h2>
 
-<h2>Test SMS Alert</h2>
-
-{% if message_sent %}
-    <div class="alert alert-success">
-        {{ message_sent }}
-    </div>
-{% endif %}
-
-<form method="post" class="w-50 mt-3">
+<form method="POST">
     {% csrf_token %}
 
-    <label class="form-label">Phone Number</label>
-    <input type="text" name="phone" class="form-control" placeholder="numbers only">
+    <label>Phone Number</label>
+    <input type="text" name="phone_number" required><br><br>
 
-    <label class="form-label mt-3">Carrier</label>
-    <select name="carrier" class="form-control">
-        <option value="">Select Carrier</option>
-        <option value="att">AT&amp;T</option>
-        <option value="verizon">Verizon</option>
-        <option value="tmobile">T-Mobile</option>
-        <option value="sprint">Sprint</option>
-        <option value="boost">Boost</option>
-        <option value="cricket">Cricket</option>
-        <option value="googlefi">Google Fi</option>
-        <option value="us mobile">US Mobile</option>
-    </select>
+    <label>Carrier</label>
+    <select name="carrier" required>
+        {% for domain, name in carriers.items %}
+            <option value="{{ domain }}">{{ name }}</option>
+        {% endfor %}
+    </select><br><br>
 
-    <label class="form-label mt-3">Message</label>
-    <textarea name="message" rows="3" class="form-control"></textarea>
+    <label>Notification Type</label>
+    <select name="alert_kind">
+        <option value="New">New</option>
+        <option value="Update">Update</option>
+        <option value="Expires">Expires</option>
+    </select><br><br>
 
-    <button class="btn btn-primary mt-3">Send SMS</button>
+    <button type="submit">Send Test SMS</button>
 </form>
 
+{% if result %}
+    <p><strong>{{ result }}</strong></p>
+{% endif %}
 {% endblock %}
