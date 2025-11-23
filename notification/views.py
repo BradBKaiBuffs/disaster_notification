@@ -361,14 +361,24 @@ def grab_counties_for_state(request):
 # view lets the user subscribe to alerts and also register new account if needed
 def subscribe_view(request):
 
-    # grabs a list of areas from noaa alerts that are not test alerts
-    areas = (
+    # the issue that occurs with pulling in raw data from noaa is the area_desc combines multiple counties/areas together separated by semicolon so
+    # the idea is to separate them at the view level instead of cleaning the database
+    raw_areas = (
         NoaaAlert.objects
         .exclude(event__icontains="test")
         .values_list("area_desc", flat=True)
-        .distinct()
-        .order_by("area_desc")
     )
+
+    clean_areas = set()
+    for area in raw_areas:
+        if not area:
+            continue
+        parts = [p.strip() for p in area.split(";")]
+        for p in parts:
+            if p:
+                clean_areas.add(p)
+
+    areas = sorted(clean_areas)
 
     # grab list of all counties from StormEvent model
     counties = (
@@ -499,11 +509,23 @@ def user_alerts_view(request):
     # grabs all subscriptions for the logged in user and is used for alerts and charts
     subscriptions = UserAreaSubscription.objects.filter(user=request.user)
 
-    # pull active alerts that user subscribed to
     active_alerts = []
 
     all_alerts = NoaaAlert.objects.all()
 
+    # added this to timestamp and compare alerts for expiration removal
+    now = timezone.now()
+    all_alerts = (
+        NoaaAlert.objects
+        .filter(
+            status__iexact="Actual",
+            expires__gt=now,
+        )
+        .exclude(message_type__iexact="Cancel")
+        .exclude(event__icontains="test")
+    )
+
+    # puts the alerts into all_alerts
     for alert in all_alerts:
         for sub in subscriptions:
             if sub.area.lower() in alert.area_desc.lower():
@@ -537,8 +559,7 @@ def user_alerts_view(request):
     if not selected_county and subscriptions.exists():
         selected_county = subscriptions.first().county
 
-    # determine the state for the selected county
-    # finds one matching row and grabs the state
+    # determine the state for the selected county and finds one matching row and grabs the state
     selected_state = None
 
     # find the state for the selected county

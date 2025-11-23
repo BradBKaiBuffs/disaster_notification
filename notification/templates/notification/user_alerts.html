@@ -124,11 +124,20 @@
         {% csrf_token %}
 
         <label class="form-label">Area</label>
-        <input type="text"
-               name="area"
-               class="form-control"
-               placeholder="Type City or Area"
-               list="area-list">
+        <input
+            type="text"
+            name="area"
+            id="area-input"
+            class="form-control"
+            list="area-suggestions"
+            value="{{ sub_form.initial.area }}"
+        >
+
+        <datalist id="area-suggestions">
+            {% for a in areas %}
+                <option value="{{ a }}"></option>
+            {% endfor %}
+        </datalist>
 
         <!-- shows previous areas user typed -->
         <datalist id="area-list">

@@ -23,7 +23,20 @@
 
             <!-- area -->
             <label class="form-label">Area</label>
-            {{ sub_form.area }}
+            <input
+                type="text"
+                name="area"
+                id="area-input"
+                class="form-control"
+                list="area-suggestions"
+                value="{{ sub_form.initial.area }}"
+            >
+
+            <datalist id="area-suggestions">
+                {% for a in areas %}
+                    <option value="{{ a }}"></option>
+                {% endfor %}
+            </datalist>
 
             <!-- state -->
             <label class="form-label mt-2">State</label>
@@ -74,7 +87,20 @@
 
             <!-- area -->
             <label class="form-label">Area</label>
-            {{ sub_form.area }}
+            <input
+                type="text"
+                name="area"
+                id="area-input"
+                class="form-control"
+                list="area-suggestions"
+                value="{{ sub_form.instance.area }}"
+            >
+
+            <datalist id="area-suggestions">
+                {% for a in areas %}
+                    <option value="{{ a }}"></option>
+                {% endfor %}
+            </datalist>
 
             <!-- state -->
             <label class="form-label mt-2">State</label>
