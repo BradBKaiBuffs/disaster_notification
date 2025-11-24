@@ -306,7 +306,7 @@ def expiring_alerts_task():
     return f"{expiring.count()} alerts for expiration"
 
 # sends test alerts to a user by the admin
-def send_test_alert_to_user(alert, user):
+def send_test_alert_to_user_task(alert, user):
 
     # test sms 
     try:

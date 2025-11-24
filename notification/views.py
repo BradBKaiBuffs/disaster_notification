@@ -30,7 +30,7 @@ from plotly.offline import plot
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .tasks import send_sms_vonage, send_active_alerts_to_user_task
+from .tasks import send_sms_vonage, send_active_alerts_to_user_task, send_test_alert_to_user_task
 from django.utils import timezone
 import uuid
 import inspect
@@ -856,7 +856,7 @@ def test_alert_view(request):
             affected_zones=[],
         )
 
-    send_test_alert_to_user_task(alert, test_user)
+        send_test_alert_to_user_task(alert, test_user)
 
     return render(request, "notification/test_alert.html", {
         "message_sent": "Completed"
