@@ -167,6 +167,18 @@ EMAIL_HOST_USER = os.getenv('EMAIL_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+# Sendgrid configuration
+EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
+DEFAULT_FROM_EMAIL = os.environ.get("FROM_EMAIL")
+
+# Vonage configuratoin
+VONAGE_API_KEY = os.environ.get("VONAGE_API_KEY")
+VONAGE_API_SECRET = os.environ.get("VONAGE_API_SECRET")
+VONAGE_FROM = os.environ.get("VONAGE_FROM", "DisasterAlert")
+VONAGE_NUMBER = os.environ.get("VONAGE_NUMBER")
+
 JAZZMIN_SETTINGS = {
     "site_title": "Weather Notifications Admin",
 

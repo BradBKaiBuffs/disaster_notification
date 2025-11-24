@@ -8,7 +8,7 @@ from dateutil.parser import isoparse
 from django.core.mail import send_mail
 from .models import NoaaAlert, UserAreaSubscription, AlertNotificationTracking
 from django.conf import settings
-from datetime import datetime, timedelta
+from datetime import timedelta
 from django.utils import timezone
 
 
@@ -136,40 +136,40 @@ def send_email_task(self, subject, message, to_email):
     except Exception as e:
         return f"Sent failed: {e}"
 
-# ran into a situation where sms was getting cut off so for now just giving a status update and link to site
+# ran into a situation where sms was getting cut off so for now just giving a status update and link to site but no longer used but netwrok times out in Railway
 # sends SMS messages using gmail
-@shared_task
-def send_sms_task(phone_number, carrier_domain, alert_kind):
+# @shared_task
+# def send_sms_task(phone_number, carrier_domain, alert_kind):
 
-    notify_label = alert_kind.capitalize()
-    site_link = "disasternotification-production.up.railway.app"
-    sms_message = (
-        f"You have a {notify_label} notification from your subscription. See details here: {site_link}"
-    )
+#     notify_label = alert_kind.capitalize()
+#     site_link = "disasternotification-production.up.railway.app"
+#     sms_message = (
+#         f"You have a {notify_label} notification from your subscription. See details here: {site_link}"
+#     )
 
-    # debugging
-    print("notify_label", alert_kind)
-    print("sms_message", sms_message)
+#     # debugging
+#     print("notify_label", alert_kind)
+#     print("sms_message", sms_message)
 
-    # create the email address that will be used to send via gmail
-    sms_email = f"{phone_number}@{carrier_domain}"
+#     # create the email address that will be used to send via gmail
+#     sms_email = f"{phone_number}@{carrier_domain}"
 
-    # debugging
-    print("phone_number", phone_number)
-    print("carrier domain", carrier_domain)
+#     # debugging
+#     print("phone_number", phone_number)
+#     print("carrier domain", carrier_domain)
 
-    try:
-        send_mail(
-            # subject is not needed for sms
-            subject="",
-            message=sms_message,
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[sms_email],
-            fail_silently=False
-        )
-        return "Sent SMS"
-    except Exception as e:
-        return f"Failed: {str(e)}"
+#     try:
+#         send_mail(
+#             # subject is not needed for sms
+#             subject="",
+#             message=sms_message,
+#             from_email=settings.EMAIL_HOST_USER,
+#             recipient_list=[sms_email],
+#             fail_silently=False
+#         )
+#         return "Sent SMS"
+#     except Exception as e:
+#         return f"Failed: {str(e)}"
     
    
 # message task for the alert messages for text and email
@@ -189,6 +189,43 @@ def alert_message_task(alert):
         f"Expires: {alert.expires}\n"
     )
 
+# switched to vonage after being rejected by Twilio, failing to have reliability with gmail smtp to sms and this is needed by notify_users_task
+def send_sms_vonage(to_number, text):
+
+    # url to send text messages to
+    url = "https://rest.nexmo.com/sms/json"
+
+    # required fields by Vonage
+    vonage_data = {
+        "api_key": settings.VONAGE_API_KEY,
+        "api_secret": settings.VONAGE_API_SECRET,
+        "to": to_number,
+        "from": settings.VONAGE_NUMBER,
+        "text": text,
+    }
+
+    response = requests.post(url, data=vonage_data, timeout=10)
+
+    result = response.json()
+
+    # debugging
+    print("Vonage sms response:", result)
+
+    return result
+
+# after testing I found that Vonage requires the +1 for U.S. numbers so I have to factor this in
+def format_phone_number(raw_number):
+    
+    digits = raw_number
+
+    if digits.startswith("+1"):
+        return "+" + digits
+    
+    if len(digits) == 10:
+        return "+1" + digits
+    
+    return "+" + digits
+
 # task checks for all user subscriptions for alerts and sends out messages
 def notify_users_task(alert, alert_kind):
     message = alert_message_task(alert)
@@ -205,43 +242,42 @@ def notify_users_task(alert, alert_kind):
             if sub.area.lower() not in alert.area_desc.lower():
                 continue
 
-            if sub.notification_type != "all" and sub.notification_type != alert_kind:
+            if sub.notification_type.lower() != "all" and sub.notification_type.lower() != alert_kind:
                 continue
 
         if AlertNotificationTracking.objects.filter(user=sub.user, alert=alert).exists():
             continue
-        
+
+        # for sms alert notifications
+        if sub.phone_number:
+
+            # go through the check to make sure the +1 exists
+            to_number = format_phone_number(sub.phone_number)
+
+            sms_text = (
+                f"{alert.event} {alert_kind.capitalize()} alert for {sub.area}. See details at: https://disasternotification-production.up.railway.app/user_alerts.html"
+            )
+
+            try:
+                result = send_sms_vonage(to_number, sms_text)
+                print("sms sent:", result)
+
+            except Exception as e:
+                print("sms failed:", e)
+
+        # for email alert notifications
         if sub.user.email:
             try:
                 send_mail(
                     subject=f"{alert.event} Alert",
                     message=message,
-                    from_email=settings.EMAIL_HOST_USER,
+                    from_email=None,
                     recipient_list=[sub.user.email],
-                    fail_silently=False
-                )
-            except:
-                pass
-
-        # sends sms with the information put in by the user at the time of subscription and does not run a celery task since there was network failures occurring since it looks like SMTP fails for sms
-        if sub.phone_number and sub.carrier:
-            sms_message = (
-                f"You have a {alert_kind.capitalize()} notification from your subscription. See details here: https://disasternotification-production.up.railway.app"
-            )
-
-            sms_email = f"{sub.phone_number}@{sub.carrier}"
-
-            try:
-                send_mail(
-                    subject="",
-                    message=sms_message,
-                    from_email=settings.EMAIL_HOST_USER,
-                    recipient_list=[sms_email],
                     fail_silently=True
                 )
-            except:
-                pass
-
+            except Exception as e:
+                print("error:", e)
+        
         # store tracking so user does not get duplicate alerts
         AlertNotificationTracking.objects.create(
             user=sub.user,
@@ -268,3 +304,30 @@ def expiring_alerts_task():
         notify_users_task(alert, "expires")
 
     return f"{expiring.count()} alerts for expiration"
+
+# with new subscriptions added to user page, this will activate and send the active alerts to the user via notify_users_task
+def send_active_alerts_to_user_task(subscription):
+
+    user = subscription.user
+    now = timezone.now()
+
+    active_alerts = (
+        NoaaAlert.objects
+        .filter(
+            status__iexact="Actual",
+            expires__gt=now,
+        )
+        .exclude(message_type__iexact="Cancel")
+        .exclude(event__icontains="test")
+    )
+
+    for alert in active_alerts:
+
+        if subscription.area.lower() in alert.area_desc.lower():
+
+            already_sent = AlertNotificationTracking.objects.filter(user=user, alert=alert).exists()
+                
+            if already_sent:
+                continue
+
+            notify_users_task(alert, "new")

@@ -30,9 +30,10 @@ from plotly.offline import plot
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .tasks import send_email_task, send_sms_task, notify_users_task
+from .tasks import send_email_task, notify_users_task, send_sms_vonage, send_active_alerts_to_user_task
 from django.utils import timezone
 import uuid
+import inspect
 
 
 # disaster events grouped by year
@@ -435,6 +436,9 @@ def subscribe_view(request):
                 # save the subscription
                 sub.save()
 
+                # send all active alerts based on selected area
+                send_active_alerts_to_user_task(sub)
+
                 # redirect back to subscription page
                 return redirect("subscribe")
 
@@ -479,6 +483,9 @@ def subscribe_view(request):
 
             # save subscription
             sub.save()
+
+            # send all active alerts chosen by user's subscription choice
+            send_active_alerts_to_user_task(sub)
 
             # redirect to subscribe page
             return redirect("subscribe")
@@ -531,7 +538,32 @@ def user_alerts_view(request):
             if sub.area.lower() in alert.area_desc.lower():
                 active_alerts.append(alert)
                 break
+    
+    # grabs all areas from active alerts
+    raw_areas = (
+        NoaaAlert.objects
+        .exclude(event__icontains="test")
+        .values_list("area_desc", flat=True)
+    )
 
+    clean_areas = set()
+    for area in raw_areas:
+        if not area:
+            continue
+        parts = [p.strip() for p in area.split(";")]
+        for p in parts:
+            if p:
+                clean_areas.add(p)
+
+    areas = sorted(clean_areas)
+
+    # grabs counties
+    counties = (
+    StormEvent.objects
+    .values_list("county", flat=True)
+    .distinct()
+    )
+    
     # grab all the states from StormEvent model
     states = (
         StormEvent.objects
@@ -605,6 +637,8 @@ def user_alerts_view(request):
         "selected_state": selected_state,
         "county_yearly_chart": yearly_chart,
         "county_event_type_chart": type_chart,
+        "areas": areas,
+        "counties": counties,
         "states": states,
         "county_map": county_map,
         "county_map_json": json.dumps(county_map),
@@ -687,56 +721,109 @@ def upload_csv_view(request):
 @staff_member_required
 def test_email_view(request):
 
-    message_sent = None
+    print(" Test view")
+    print("file", inspect.getfile(test_email_view))
+    print("request method", request.method)
+    result = None
 
-    subject = "Disaster Notification"
-    message = "There is a new alert in your area."
-    to_email = "bkai1@buffs.wtamu.edu"
+    if request.method == "POST":
+        to_email = request.POST.get("to_email")
+        subject = request.POST.get("subject")
+        message = request.POST.get("message")
 
-    send_email_task.delay(subject, message, to_email)
+        print("sent to", to_email)
+        print("subject", subject)
+        print("message", message)
 
-    message_sent = "Email sent to Celery Worker"
+        try:
+            print("inside try")
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=None,
+                recipient_list=[to_email],
+                fail_silently=False
+            )
+            
+            result = "Test email sent successfully."
+            print("try ending")
+        except Exception as e:
+            print("error", e)
+            result = f"Failed to send email: {e}"
 
     return render(request, "notification/test_email.html", {
-
-        "message_sent": message_sent
+        "result": result
     })
 
 
 # testing task that will be used for live alert updates as need to see what type of message is being sent out to sms
 @staff_member_required
 def test_sms_view(request):
+
     result = None
 
     if request.method == "POST":
-        phone_number = request.POST.get("phone_number")
-        carrier = request.POST.get("carrier")
+        raw_phone = request.POST.get("phone_number", "").strip()
         alert_kind = request.POST.get("alert_kind")
-
-        notify_label = alert_kind.capitalize()
         site_link = "https://disasternotification-production.up.railway.app"
-        sms_message = (
-            f"You have a {notify_label} notification from your subscription. See details here: {site_link}"
-        )
 
-        sms_email = f"{phone_number}@{carrier}"
+        # encountered issue where vonage it turns out vonage needs +1 so this means this is only going to be for U.S. numbers
+        if raw_phone.startswith("+1"):
+            phone = raw_phone
+        else:
 
-        try:
-            send_mail(
-                subject="",
-                message=sms_message,
-                from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[sms_email],
-                fail_silently=False
-            )
-            result = "SMS sent"
-        except Exception as e:
-            result = f"SMS failed: {str(e)}"
+            clean = ""
+            for ch in raw_phone:
+                if ch.isdigit():
+                    clean += ch
+
+            phone = "+1" + clean
+
+        print("Formatted phone:", phone)
+
+        message = f"You have a {alert_kind} alert. Please visit {site_link}."
+
+        response = send_sms_vonage(phone, message)
+        result = response
 
     return render(request, "notification/test_sms.html", {
         "result": result,
-        "carriers": CARRIER_NAMES,
+        "carriers": CARRIER_NAMES
     })
+
+
+    # tested for gmail smtp but that doesn't work right now
+    # result = None
+
+    # if request.method == "POST":
+    #     phone_number = request.POST.get("phone_number")
+    #     carrier = request.POST.get("carrier")
+    #     alert_kind = request.POST.get("alert_kind")
+
+    #     notify_label = alert_kind.capitalize()
+    #     site_link = "https://disasternotification-production.up.railway.app"
+    #     sms_message = (
+    #         f"You have a {notify_label} notification from your subscription. See details here: {site_link}"
+    #     )
+
+    #     sms_email = f"{phone_number}@{carrier}"
+
+    #     try:
+    #         send_mail(
+    #             subject="Alert Notification",
+    #             message=sms_message,
+    #             from_email=settings.EMAIL_HOST_USER,
+    #             recipient_list=[sms_email],
+    #             fail_silently=False
+    #         )
+    #         result = "SMS sent"
+    #     except Exception as e:
+    #         result = f"SMS failed: {str(e)}"
+
+    # return render(request, "notification/test_sms.html", {
+    #     "result": result,
+    #     "carriers": CARRIER_NAMES,
+    # })
 
 
 # for testing alerts at initial stage of development

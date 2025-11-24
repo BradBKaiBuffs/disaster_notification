@@ -1,2 +1,24 @@
-<h3>Email task sent to Celery</h3>
-<p>Check your inbox</p>
+{% extends "notification/base.html" %}
+
+{% block content %}
+<h2>Test Email</h2>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <label for="id_to_email">To Email</label><br>
+    <input type="email" id="id_to_email" name="to_email" required><br><br>
+
+    <label for="id_subject">Subject</label><br>
+    <input type="text" id="id_subject" name="subject" placeholder="Test Email"><br><br>
+
+    <label for="id_message">Message</label><br>
+    <textarea id="id_message" name="message" rows="5" cols="40" placeholder="This is a test email from Disaster Notification."></textarea><br><br>
+
+    <button type="submit">Send Test Email</button>
+</form>
+
+{% if result %}
+    <p><strong>{{ result }}</strong></p>
+{% endif %}
+{% endblock %}
