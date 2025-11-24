@@ -305,6 +305,36 @@ def expiring_alerts_task():
 
     return f"{expiring.count()} alerts for expiration"
 
+# sends test alerts to a user by the admin
+def send_test_alert_to_user(alert, user):
+
+    # test sms 
+    try:
+        sub = UserAreaSubscription.objects.filter(user=user).first()
+        if sub and sub.phone_number:
+            send_sms_vonage(
+                format_phone_number(sub.phone_number),
+                "This is a test notification"
+            )
+            print("Test sms sent")
+    except Exception as e:
+        print("Test sms failed:", e)
+
+    # test email
+    try:
+        if user.email:
+            send_mail(
+                subject="TEST ALERT",
+                message="This is a test email alert",
+                from_email=None,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+            print("Test email sent")
+    except Exception as e:
+        print("Test email failed:", e)
+
+
 # with new subscriptions added to user page, this will activate and send the active alerts to the user via notify_users_task
 def send_active_alerts_to_user_task(subscription):
 

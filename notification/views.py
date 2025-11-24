@@ -30,10 +30,12 @@ from plotly.offline import plot
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .tasks import send_email_task, notify_users_task, send_sms_vonage, send_active_alerts_to_user_task
+from .tasks import send_sms_vonage, send_active_alerts_to_user_task, send_test
 from django.utils import timezone
 import uuid
 import inspect
+from django.contrib.auth.models import User
+
 
 
 # disaster events grouped by year
@@ -829,29 +831,32 @@ def test_sms_view(request):
 # for testing alerts at initial stage of development
 @staff_member_required
 def test_alert_view(request):
+    test_user = User.objects.get(username="cidm6395")
 
-    # create the primary key using uuid
-    fake_id = str(uuid.uuid4())
+    if request.method == "POST":
 
-    # basic information for the alert in email and text, I had to crunch down what I sent for texts
-    alert = NoaaAlert.objects.create(
-        id=fake_id,
-        event="Test Disaster Alert",
-        area_desc="Canyon, TX",
-        description="This is a test alert for disaster notification system.",
-        instruction="This is only a test.",
-        category="Met",
-        severity="Moderate",
-        certainty="Likely",
-        urgency="Expected",
-        sent=timezone.now(),
-        effective=timezone.now(),
-        onset=timezone.now(),
-        expires=timezone.now() + timezone.timedelta(hours=1),
-        affected_zones=[],
-    )
+        # create the primary key using uuid
+        fake_id = str(uuid.uuid4())
 
-    notify_users_task(alert, "new")
+        # basic information for the alert in email and text, I had to crunch down what I sent for texts
+        alert = NoaaAlert.objects.create(
+            id=fake_id,
+            event="Test Disaster Alert",
+            area_desc="Canyon, TX",
+            description="This is a test alert for disaster notification system.",
+            instruction="This is only a test.",
+            category="Met",
+            severity="Moderate",
+            certainty="Likely",
+            urgency="Expected",
+            sent=timezone.now(),
+            effective=timezone.now(),
+            onset=timezone.now(),
+            expires=timezone.now() + timezone.timedelta(hours=1),
+            affected_zones=[],
+        )
+
+    send_test_alert_to_user_task(alert, test_user)
 
     return render(request, "notification/test_alert.html", {
         "message_sent": "Completed"
