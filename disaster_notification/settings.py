@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'dj_redis_panel',
     'import_export',
+    'forecasting',
 ]
 
 MIDDLEWARE = [

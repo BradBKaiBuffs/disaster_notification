@@ -37,6 +37,11 @@
                 User Alerts Page
             </a>
 
+            <a href="{% url 'forecasting' %}"
+               class="btn btn-primary btn-sm me-2">
+                Forecasting
+            </a>
+
             {% if user.is_authenticated %}
 
                 {% if user.is_staff %}

@@ -24,4 +24,5 @@ urlpatterns = [
     path('', include('notification.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path("upload_csv", upload_csv_view, name="upload_csv"),
+    path("forecasting/", include("forecasting.urls")),
 ]        
