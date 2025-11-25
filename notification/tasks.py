@@ -237,6 +237,10 @@ def notify_users_task(alert, alert_kind):
 
     for sub in subs:
 
+        # check if the subscription still exists
+        if not UserAreaSubscription.objects.filter(id=sub.id).exists():
+            continue
+
         if not testing:
 
             if sub.area.lower() not in alert.area_desc.lower():

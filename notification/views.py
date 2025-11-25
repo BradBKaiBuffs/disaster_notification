@@ -360,6 +360,27 @@ def grab_counties_for_state(request):
     # json response for javascript
     return JsonResponse({"counties": counties})
 
+def send_subscription_notifications(user, sub):
+    try:
+        # sends an email for new subscription
+        send_mail(
+            subject="Subscription Created",
+            message=f"You subscribed to alerts for {sub.area}, {sub.state}.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+
+        # sends a sms for new subscription
+        if sub.phone_number and sub.carrier:
+            send_sms_vonage.delay(
+                to_number=sub.phone_number,
+                carrier=sub.carrier,
+                message=f"You subscribed to {sub.area}, {sub.state}."
+            )
+    except Exception as e:
+        print("Failed to send", e)
+
 
 # view lets the user subscribe to alerts and also register new account if needed
 def subscribe_view(request):
@@ -438,6 +459,9 @@ def subscribe_view(request):
                 # save the subscription
                 sub.save()
 
+                # sends user notice of subscription via text and email
+                send_subscription_notifications(sub.user, sub)
+
                 # send all active alerts based on selected area
                 send_active_alerts_to_user_task(sub)
 
@@ -485,6 +509,9 @@ def subscribe_view(request):
 
             # save subscription
             sub.save()
+
+            # sends user notice of subscription via text and email
+            send_subscription_notifications(sub.user, sub)
 
             # send all active alerts chosen by user's subscription choice
             send_active_alerts_to_user_task(sub)
