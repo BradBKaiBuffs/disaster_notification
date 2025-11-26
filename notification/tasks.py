@@ -259,7 +259,7 @@ def notify_users_task(alert, alert_kind):
             to_number = format_phone_number(sub.phone_number)
 
             sms_text = (
-                f"{alert.event} {alert_kind.capitalize()} alert for {sub.area}. See details at: https://disasternotification-production.up.railway.app/user_alerts.html"
+                f"{alert.event} {alert_kind.capitalize()} alert for {sub.area}. See details at: https://disasternotification-production.up.railway.app"
             )
 
             try:

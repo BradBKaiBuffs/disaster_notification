@@ -30,7 +30,7 @@ from plotly.offline import plot
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .tasks import send_sms_vonage, send_active_alerts_to_user_task, send_test_alert_to_user_task
+from notification.tasks import send_sms_vonage, send_active_alerts_to_user_task, send_test_alert_to_user_task, format_phone_number
 from django.utils import timezone
 import uuid
 import inspect
@@ -372,11 +372,14 @@ def send_subscription_notifications(user, sub):
         )
 
         # sends a sms for new subscription
-        if sub.phone_number and sub.carrier:
-            send_sms_vonage.delay(
-                to_number=sub.phone_number,
-                carrier=sub.carrier,
-                message=f"You subscribed to {sub.area}, {sub.state}."
+        if sub.phone_number:
+
+            formatted_number = format_phone_number(sub.phone_number)
+            print(formatted_number)
+
+            send_sms_vonage(
+                to_number=formatted_number,
+                text=f"You subscribed to {sub.area}, {sub.state}."
             )
     except Exception as e:
         print("Failed to send", e)
@@ -683,8 +686,13 @@ def user_alerts_view(request):
 def delete_subscription_view(request, sub_id):
 
     # grabs the subscription id
-    sub = get_object_or_404(UserAreaSubscription, id=sub_id, user=request.user)
+    sub = UserAreaSubscription.objects.filter(id=sub_id, user=request.user)
 
+    # in the event the subscription no longer exists (happened during my testing)
+    if not sub:
+        messages.error(request, "Subscription no longer exists.")
+        return redirect ("user_alerts")
+    
     # delete the subscription from the database
     sub.delete()
 

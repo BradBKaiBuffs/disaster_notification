@@ -39,10 +39,12 @@
                     <td>{{ sub.carrier_label }}</td>
                     <td>{{ sub.get_notification_type_display }}</td>
                     <td>
-                        <a class="btn btn-sm btn-danger"
-                           href="{% url 'delete_subscription' sub.id %}">
-                            delete
-                        </a>
+                        <form action="{% url 'delete_subscription' sub.id %}" method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                delete
+                            </button>
+                        </form>
                     </td>
                 </tr>
             {% empty %}
