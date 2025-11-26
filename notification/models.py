@@ -36,14 +36,16 @@ class NoaaAlert(models.Model):
         # simple readable label for admin and logs
         return f"{self.event} ({self.severity})"
 
-CARRIER_NAMES = {
-    "vtext.com": "Verizon",
-    "txt.att.net": "AT&T",
-    "tmomail.net": "T-Mobile",
-    "messaging.sprintpcs.com": "Sprint",
-    "mms.uscc.net": "US Cellular",
-    "message.alltel.com": "AllTel",
-}
+# NOT USED FOR VONAGE
+# CREATED ORIGINALLY FOR GMAIL/SENDGRID SMTP METHOD - will just be hidden from user view and default value will be ''
+# CARRIER_NAMES = {
+#     "vtext.com": "Verizon",
+#     "txt.att.net": "AT&T",
+#     "tmomail.net": "T-Mobile",
+#     "messaging.sprintpcs.com": "Sprint",
+#     "mms.uscc.net": "US Cellular",
+#     "message.alltel.com": "AllTel",
+# }
 
 # stores what area a user wants to follow for alerts
 class UserAreaSubscription(models.Model):
@@ -67,11 +69,13 @@ class UserAreaSubscription(models.Model):
     phone_number = models.CharField(max_length=20)
 
     # similar situation with state and county so I had to put in default parameters
-    carrier = models.CharField(max_length=50, default="", blank=True)
+    # NOT USED FOR VONAGE
+    # CREATED ORIGINALLY FOR GMAIL/SENDGRID SMTP METHOD - will just be hidden from user view and default value will be ''
+    carrier = models.CharField(max_length=50, default='', blank=True)
 
     # pulled the value like vtext.com instead of Verizon on the Alert Subscriptions page
-    def carrier_label(self):
-        return CARRIER_NAMES.get(self.carrier, self.carrier)
+    # def carrier_label(self):
+    #     return CARRIER_NAMES.get(self.carrier, self.carrier)
 
     # saves what notification type the user wants
     notification_type = models.CharField(
@@ -115,6 +119,9 @@ class StormEvent(models.Model):
     end_month = models.IntegerField(default=1)
     begin_time = models.IntegerField(default=1)
     end_time = models.IntegerField(default=1)
+    # added to address area_desc issue; fips will be able to match UGC data in noaaalerts
+    county_fips = models.CharField(max_length=10, default='')
+    state_fips = models.CharField(max_length=10, default='')
 
     def __str__(self):
         return f"{self.event_type} in {self.state} ({self.begin_year})"

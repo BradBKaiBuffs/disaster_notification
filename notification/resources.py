@@ -12,7 +12,10 @@ class StormEventResource(resources.ModelResource):
     end_year = fields.Field(attribute="end_year", column_name="END_YEAR")
     end_month = fields.Field(attribute="end_month", column_name="END_MONTH")
     begin_time = fields.Field(attribute="begin_time", column_name="BEGIN_TIME")
-    end_time = fields.Field(attribute="end_time", column_name="END_TIME")
+    end_time = fields.Field(attribute="end_time", column_name="END_TIME")''
+    # added to account for area_desc issue, using fips to link to county/state
+    county_fips = fields.Field(attribute="county_fips", column_name="CZ_FIPS")
+    state_fips = fields.Field(attribute="state_fips", column_name="STATE_FIPS")
 
     class Meta:
         model = StormEvent

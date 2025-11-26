@@ -14,8 +14,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 # using Count to annotate and count rows
 from django.db.models import Count
-from .models import NoaaAlert, UserAreaSubscription, StormEvent, AlertNotificationTracking, CARRIER_NAMES
-from .forms import UserAreaSubscriptionForm, UserRegistrationForm, CsvUploadForm
+from notification.models import NoaaAlert, UserAreaSubscription, StormEvent
+from notification.forms import UserAreaSubscriptionForm, UserRegistrationForm, CsvUploadForm
 # sends a forbidden response when someone not allowed opens a page
 from django.http import HttpResponseForbidden
 # decorator so only staff can use upload page
@@ -794,6 +794,7 @@ def test_email_view(request):
 
 
 # testing task that will be used for live alert updates as need to see what type of message is being sent out to sms
+# NOTE for future: still has carriers that is residual from the gmail and sendgrid attempts for sms delivery
 @staff_member_required
 def test_sms_view(request):
 
