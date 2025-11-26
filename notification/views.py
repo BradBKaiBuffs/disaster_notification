@@ -36,7 +36,33 @@ import uuid
 import inspect
 from django.contrib.auth.models import User
 
+# uses fips code for user matching the county/state since area_desc is not desirable for a selector
+def grab_fips(sub):
+    try:
+        return(
+            StormEvent.objects
+            .filter(state__iexact=sub.state, county__iexact=sub.county)
+            .values_list("county_fips", flat=True)
+            .distinct()
+            .first() 
+        )
+    except:
+        return None
 
+# checks the alert against the subscription with fips
+def sub_alert_matching(alert, sub):
+
+    fips_list = alert.geocode.get("FIPS6", [])
+
+    if not fips_list:
+        return False
+    
+    user_fips = grab_fips(sub)
+
+    if not user_fips:
+        return False
+    
+    return str(user_fips) in fips_list
 
 # disaster events grouped by year
 def grab_disaster_events_per_year():
@@ -351,7 +377,8 @@ def grab_counties_for_state(request):
 
     # find the county with the state
     counties = list(
-        StormEvent.objects.filter(state__iexact=state)
+        StormEvent.objects
+        .filter(state__iexact=state)
         .values_list("county", flat=True)
         .distinct()
         .order_by("county")
@@ -365,7 +392,7 @@ def send_subscription_notifications(user, sub):
         # sends an email for new subscription
         send_mail(
             subject="Subscription Created",
-            message=f"You subscribed to alerts for {sub.area}, {sub.state}.",
+            message=f"You subscribed to alerts for {sub.county}, {sub.state}.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=True,
@@ -379,7 +406,7 @@ def send_subscription_notifications(user, sub):
 
             send_sms_vonage(
                 to_number=formatted_number,
-                text=f"You subscribed to {sub.area}, {sub.state}."
+                text=f"You subscribed to {sub.county}, {sub.state}."
             )
     except Exception as e:
         print("Failed to send", e)
@@ -388,24 +415,25 @@ def send_subscription_notifications(user, sub):
 # view lets the user subscribe to alerts and also register new account if needed
 def subscribe_view(request):
 
+    # NOT USED ANYMORE
     # the issue that occurs with pulling in raw data from noaa is the area_desc combines multiple counties/areas together separated by semicolon so
     # the idea is to separate them at the view level instead of cleaning the database
-    raw_areas = (
-        NoaaAlert.objects
-        .exclude(event__icontains="test")
-        .values_list("area_desc", flat=True)
-    )
+    # raw_areas = (
+    #     NoaaAlert.objects
+    #     .exclude(event__icontains="test")
+    #     .values_list("area_desc", flat=True)
+    # )
 
-    clean_areas = set()
-    for area in raw_areas:
-        if not area:
-            continue
-        parts = [p.strip() for p in area.split(";")]
-        for p in parts:
-            if p:
-                clean_areas.add(p)
+    # clean_areas = set()
+    # for area in raw_areas:
+    #     if not area:
+    #         continue
+    #     parts = [p.strip() for p in area.split(";")]
+    #     for p in parts:
+    #         if p:
+    #             clean_areas.add(p)
 
-    areas = sorted(clean_areas)
+    # areas = sorted(clean_areas)
 
     # grab list of all counties from StormEvent model
     counties = (
@@ -477,7 +505,7 @@ def subscribe_view(request):
 
         # return the subscription page for logged in user
         return render(request, "notification/subscribe.html", {
-            "areas": areas,
+            # "areas": areas,
             "counties": counties,
             "states": states,
             "county_map": county_map,
@@ -531,7 +559,7 @@ def subscribe_view(request):
     return render(request, "notification/subscribe.html", {
         "user_form": user_form,
         "sub_form": sub_form,
-        "areas": areas,
+        # "areas": areas,
         "counties": counties,
         "states": states,
         "county_map": county_map,
@@ -567,27 +595,29 @@ def user_alerts_view(request):
     # puts the alerts into all alerts
     for alert in all_alerts:
         for sub in subscriptions:
-            if sub.area.lower() in alert.area_desc.lower():
+            if sub_alert_matching(alert, sub):
                 active_alerts.append(alert)
                 break
     
+    # NOT USED ANYMORE
     # grabs all areas from active alerts
-    raw_areas = (
-        NoaaAlert.objects
-        .exclude(event__icontains="test")
-        .values_list("area_desc", flat=True)
-    )
+    # raw_areas = (
+    #     NoaaAlert.objects
+    #     .exclude(event__icontains="test")
+    #     .values_list("area_desc", flat=True)
+    # )
 
-    clean_areas = set()
-    for area in raw_areas:
-        if not area:
-            continue
-        parts = [p.strip() for p in area.split(";")]
-        for p in parts:
-            if p:
-                clean_areas.add(p)
+    # area_desc will not be used anymore
+    # clean_areas = set()
+    # for area in raw_areas:
+    #     if not area:
+    #         continue
+    #     parts = [p.strip() for p in area.split(";")]
+    #     for p in parts:
+    #         if p:
+    #             clean_areas.add(p)
 
-    areas = sorted(clean_areas)
+    # areas = sorted(clean_areas)
 
     # grabs counties
     counties = (
@@ -669,7 +699,7 @@ def user_alerts_view(request):
         "selected_state": selected_state,
         "county_yearly_chart": yearly_chart,
         "county_event_type_chart": type_chart,
-        "areas": areas,
+        # "areas": areas,
         "counties": counties,
         "states": states,
         "county_map": county_map,
@@ -826,7 +856,6 @@ def test_sms_view(request):
 
     return render(request, "notification/test_sms.html", {
         "result": result,
-        "carriers": CARRIER_NAMES
     })
 
 

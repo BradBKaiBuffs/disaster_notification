@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import dashboard_view, subscribe_view, user_alerts_view, delete_subscription_view, upload_csv_view, grab_counties_for_state, test_email_view, test_sms_view, test_alert_view
+from notification.views import dashboard_view, subscribe_view, user_alerts_view, delete_subscription_view, upload_csv_view, grab_counties_for_state, test_email_view, test_sms_view, test_alert_view
 
 urlpatterns = [
     path('', dashboard_view, name='dashboard'),

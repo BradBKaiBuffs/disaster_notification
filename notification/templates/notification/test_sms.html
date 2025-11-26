@@ -9,13 +9,6 @@
     <label>Phone Number</label>
     <input type="text" name="phone_number" required><br><br>
 
-    <label>Carrier</label>
-    <select name="carrier" required>
-        {% for domain, name in carriers.items %}
-            <option value="{{ domain }}">{{ name }}</option>
-        {% endfor %}
-    </select><br><br>
-
     <label>Notification Type</label>
     <select name="alert_kind">
         <option value="New">New</option>

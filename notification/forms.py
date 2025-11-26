@@ -10,13 +10,14 @@ class UserAreaSubscriptionForm(forms.ModelForm):
     class Meta:
         model = UserAreaSubscription
 
-        fields = ["area", "state", "county", "phone_number", "carrier", "notification_type"]
+        fields = ["state", "county", "phone_number", "notification_type"]
 
         widgets = {
-            "area": forms.TextInput(attrs={
-                "class": "form-control",
-                "placeholder": "Type area name",
-            }),
+            # NO LONGER USED (area_desc no longer used)
+            # "area": forms.TextInput(attrs={
+            #     "class": "form-control",
+            #     "placeholder": "Type area name",
+            # }),
             "state": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Type state name",
@@ -29,10 +30,11 @@ class UserAreaSubscriptionForm(forms.ModelForm):
                 "class": "form-control",
                 "placeholder": "Type phone number",
             }),
-            "carrier": forms.TextInput(attrs={
-                "class": "form-control",
-                "placeholder": "Type carrier"
-            }),
+            # NO LONGER USED (Vonage doesn't need it)
+            # "carrier": forms.TextInput(attrs={
+            #     "class": "form-control",
+            #     "placeholder": "Type carrier"
+            # }),
             "notification_type": forms.Select(attrs={
                 "class": "form-control",
             }),

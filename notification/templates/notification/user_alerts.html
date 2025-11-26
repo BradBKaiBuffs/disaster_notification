@@ -21,7 +21,7 @@
         <thead>
             <tr>
                 <!-- removed carrier but still exists in model -->
-                <th>Area</th>
+                <!-- <th>Area</th> -->
                 <th>State</th>
                 <th>County</th>
                 <th>Phone</th>
@@ -32,7 +32,7 @@
         <tbody>
             {% for sub in subscriptions %}
                 <tr>
-                    <td>{{ sub.area }}</td>
+                    <!-- <td>{{ sub.area }}</td> -->
                     <td>{{ sub.state }}</td>
                     <td>{{ sub.county }}</td>
                     <td>{{ sub.phone_number }}</td>
@@ -64,7 +64,7 @@
                 <tr>
                     <!-- removed carrier but still exists in model -->
                     <th>Event</th>
-                    <th>Area</th>
+                    <!-- <th>Area</th> -->
                     <th>Severity</th>
                     <th>Urgency</th>
                     <th>Sent</th>
@@ -81,7 +81,7 @@
                     {% endif %}
                 ">
                     <td>{{ alert.event }}</td>
-                    <td>{{ alert.area_desc }}</td>
+                    <!-- <td>{{ alert.area_desc }}</td> -->
                     <td>{{ alert.severity }}</td>
                     <td>{{ alert.urgency }}</td>
                     <td>{{ alert.sent|date:'Y-m-d H:i' }}</td>

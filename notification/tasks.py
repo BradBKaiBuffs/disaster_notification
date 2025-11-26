@@ -6,7 +6,7 @@ from celery import shared_task
 from dateutil.parser import isoparse
 # for sending email
 from django.core.mail import send_mail
-from .models import NoaaAlert, UserAreaSubscription, AlertNotificationTracking
+from notification.models import NoaaAlert, UserAreaSubscription, AlertNotificationTracking
 from django.conf import settings
 from datetime import timedelta
 from django.utils import timezone
@@ -228,6 +228,10 @@ def format_phone_number(raw_number):
 
 # task checks for all user subscriptions for alerts and sends out messages
 def notify_users_task(alert, alert_kind):
+
+    # addresses circular import error that I was receiving
+    from notification.views import sub_alert_matching
+
     message = alert_message_task(alert)
 
     subs = UserAreaSubscription.objects.all()
@@ -243,7 +247,12 @@ def notify_users_task(alert, alert_kind):
 
         if not testing:
 
-            if sub.area.lower() not in alert.area_desc.lower():
+            # NOT USED ANYMORE
+            # if sub.area.lower() not in alert.area_desc.lower():
+                # continue
+
+            # check for fips match
+            if not sub_alert_matching(alert, sub):
                 continue
 
             if sub.notification_type.lower() != "all" and sub.notification_type.lower() != alert_kind:
@@ -259,7 +268,7 @@ def notify_users_task(alert, alert_kind):
             to_number = format_phone_number(sub.phone_number)
 
             sms_text = (
-                f"{alert.event} {alert_kind.capitalize()} alert for {sub.area}. See details at: https://disasternotification-production.up.railway.app"
+                f"{alert.event} {alert_kind.capitalize()} alert for {sub.county}. See details at: https://disasternotification-production.up.railway.app"
             )
 
             try:
@@ -341,6 +350,9 @@ def send_test_alert_to_user_task(alert, user):
 
 # with new subscriptions added to user page, this will activate and send the active alerts to the user via notify_users_task
 def send_active_alerts_to_user_task(subscription):
+    
+    # to address circular import error, importing from inside
+    from notification.views import sub_alert_matching
 
     user = subscription.user
     now = timezone.now()
@@ -357,8 +369,11 @@ def send_active_alerts_to_user_task(subscription):
 
     for alert in active_alerts:
 
-        if subscription.area.lower() in alert.area_desc.lower():
+        # NOT USED ANYMORE
+        # if subscription.area.lower() in alert.area_desc.lower():
 
+        # uses fips to check
+        if sub_alert_matching(alert, subscription):
             already_sent = AlertNotificationTracking.objects.filter(user=user, alert=alert).exists()
                 
             if already_sent:
