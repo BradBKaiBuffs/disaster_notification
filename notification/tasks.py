@@ -261,8 +261,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
     subs = UserAreaSubscription.objects.all()
 
     # for testing, pushes a test alert to all also requires "test" in the message 
-    first_alert = alerts[0]
-    testing = "test" in first_alert.event.lower()
+    testing = "test" in alerts[0].event.lower()
 
     for sub in subs:
 
@@ -273,7 +272,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
                 # continue
 
             # check for fips match
-            if not sub_alert_matching(first_alert, sub):
+            if not sub_alert_matching(alerts[0], sub):
                 continue
 
             if sub.notification_type.lower() != "all" and sub.notification_type.lower() != alert_kind:
@@ -284,12 +283,14 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
 
             # go through the check to make sure the +1 exists
             to_number = format_phone_number(sub.phone_number)
-            send_sms_vonage(to_number, sms_body)
+            
+            if sms_body:
+                send_sms_vonage(to_number, sms_body)
 
         # for email alert notifications
         if sub.user.email:
                 send_mail(
-                    subject=f"{alerts.kind.capitalize()} Alerts ({len(alerts)})",
+                    subject=f"Alerts ({len(alerts)})",
                     message=email_body,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[sub.user.email],
