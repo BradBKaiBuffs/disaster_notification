@@ -8,7 +8,8 @@
 {% if not request.user.is_staff %}
     <p style="color: red;">You do not have permission to upload files.</p>
 {% else %}
-
+<p> This page is to upload the Noaa Storm Events csv files from https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/</p>
+<p> The uploads must be cleaned with the clean_csv.py file.</p>
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.file }}

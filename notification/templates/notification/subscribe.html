@@ -167,41 +167,46 @@
     {% endif %}
 </div>
 
-<script type="application/json" id="county-map-json">
-    {{ county_map_json|escapejs }}
-</script>
-
 <script>
-    // read JSON
-    const COUNTY_MAP = JSON.parse(
-        document.getElementById("county-map-json").textContent
-    );
+    // when a state is selected, load the matching counties from the backend
+    document.addEventListener("DOMContentLoaded", function () {
 
-    // state dropdown
-    document.querySelectorAll(".state-select").forEach(function (stateSel) {
+        document.querySelectorAll(".state-select").forEach(function (stateSelect) {
 
-        stateSel.addEventListener("change", function () {
-            const state = this.value;
+            stateSelect.addEventListener("change", function () {
 
-            // county dropdown
-            const form = this.closest("form");
-            const countySelect = form.querySelector(".county-select");
+                // grab selected state
+                const state = this.value;
 
-            // reset counties
-            countySelect.innerHTML = '<option value="">Select County</option>';
+                // find the county dropdown
+                const form = this.closest("form");
+                const countySelect = form.querySelector(".county-select");
 
-            // no county listed
-            if (!state || !COUNTY_MAP[state]) return;
+                // reset dropdown
+                countySelect.innerHTML = '<option value="">Select County</option>';
 
-            // grab counties for selected state
-            COUNTY_MAP[state].forEach(function (ct) {
-                const opt = document.createElement("option");
-                opt.value = ct;
-                opt.textContent = ct;
-                countySelect.appendChild(opt);
+                // if nothing selected, do nothing
+                if (!state) {
+                    return;
+                }
+
+                // fetch counties
+                fetch(`/ajax/get-counties/?state=${encodeURIComponent(state)}`)
+                    .then(response => response.json())
+                    .then(data => {
+
+                        data.counties.forEach(ct => {
+                            const opt = document.createElement("option");
+                            opt.value = ct;
+                            opt.textContent = ct;
+                            countySelect.appendChild(opt);
+                        });
+                    })
+                    .catch(error => {
+                        console.error("Error loading counties:", error);
+                    });
             });
         });
-
     });
 </script>
 

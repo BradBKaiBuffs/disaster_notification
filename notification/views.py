@@ -484,6 +484,9 @@ def subscribe_view(request):
                 # save the subscription
                 sub.save()
 
+                # message to state sub was saved
+                messages.success(request, "Your subscription was saved.")
+
                 # sends user notice of subscription via text and email
                 send_subscription_notifications(sub.user, sub)
 
@@ -491,7 +494,7 @@ def subscribe_view(request):
                 send_active_alerts_to_user_task(sub)
 
                 # redirect back to subscription page
-                return redirect("subscribe")
+                return redirect("user_alerts")
 
         # if request is GET or other, show blank subscription form
         else:
@@ -535,6 +538,9 @@ def subscribe_view(request):
             # save subscription
             sub.save()
 
+            # message to state sub was saved
+            messages.success(request, "Your subscription was saved.")
+
             # sends user notice of subscription via text and email
             send_subscription_notifications(sub.user, sub)
 
@@ -542,7 +548,7 @@ def subscribe_view(request):
             send_active_alerts_to_user_task(sub)
 
             # redirect to subscribe page
-            return redirect("subscribe")
+            return redirect("user_alerts")
 
     # if page is opened with GET, show blank forms for new registration
     else:
@@ -567,13 +573,13 @@ def subscribe_view(request):
 # personalized user page view
 def user_alerts_view(request):
     # debug
-    # print("user:", request.user)
+    print("user:", request.user)
 
     # grabs all subscriptions for the logged in user and is used for alerts and charts
     subscriptions = UserAreaSubscription.objects.filter(user=request.user)
     # debugging
-    # print("subs:", list(subscriptions.values("state", "county")))
-    # print("sub count:", subscriptions.count())
+    print("subs:", list(subscriptions.values("state", "county")))
+    print("sub count:", subscriptions.count())
 
     active_alerts = []
 
@@ -581,12 +587,14 @@ def user_alerts_view(request):
     now = timezone.now()
     all_alerts = (
         NoaaAlert.objects
+        # limiting what to load to reduce loading time on page
+        .only("id", "event", "expires", "geocode", "severity", "urgency")
         .filter(
             status__iexact="Actual",
             expires__gt=now,
         )
         .exclude(message_type__iexact="Cancel")
-        #.exclude(event__icontains="test")
+        .exclude(event__icontains="test")
     )
     # debugging
     # print("active alert count:", all_alerts.count())
@@ -661,7 +669,7 @@ def user_alerts_view(request):
 
     # areas = sorted(clean_areas)
 
-    # grabs counties
+    # grabs counties from StormEvent model
     counties = (
     StormEvent.objects
     .values_list("county", flat=True)

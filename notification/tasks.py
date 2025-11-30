@@ -353,20 +353,19 @@ def combined_alert_summary(alerts):
 
     if not alerts:
         print("No active alerts")
+        return("","")
 
     email_contents = []
     sms_contents = []
 
     # email
     for alert in alerts:
-        email_line = (
-            "Event:" + {alert.event} + "\n"
-            "County:" + {alert.county} + "\n"
-            "Severity:" + {alert.severity} + "\n"
-            "Expires:" + {alert.expires} + "\n"
+        email_contents.append(
+            "Event:" + alert.event + "\n"
+            "Area:" + alert.area_desc + "\n"
+            "Severity:" + alert.severity + "\n"
+            "Expires:" + str(alert.expires) + "\n"
         )
-
-    email_contents.append(email_line)
 
     # sms will just show alert event due to character restrictions
     sms_contents.append(alert.event)

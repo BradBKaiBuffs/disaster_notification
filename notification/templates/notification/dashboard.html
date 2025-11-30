@@ -57,7 +57,8 @@
                 <th>Urgency</th>
                 <th>Sent</th>
                 <th>Expires</th>
-                <!-- for debugging <th>Geocode</th> -->
+                <!-- for debugging -->
+                <th>Geocode</th>
             </tr>
         </thead>
 
@@ -75,7 +76,8 @@
                 <td>{{ alert.urgency }}</td>
                 <td>{{ alert.sent|date:'Y-m-d H:i' }}</td>
                 <td>{{ alert.expires|date:'Y-m-d H:i' }}</td>
-                <!-- for debugging <td>{{ alert.geocode }}</td> -->
+                <!-- for debugging -->
+                 <td>{{ alert.geocode }}</td>
             </tr>
         {% endfor %}
         </tbody>
