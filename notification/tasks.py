@@ -253,6 +253,11 @@ def sub_alert_matching(alert, sub):
 # due to the sheer amount of sms/emails one subscription and chug out, decided to combine alerts into a list that is sent in one sms/email per cycle if new active alert status exist
 def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
 
+    # ran into a situation where work service doesn't like it when alert is not in a list so I'm just going to make everything a list
+    from notification.models import NoaaAlert
+    if isinstance(alerts, NoaaAlert):
+        alerts = [alerts]
+
     subs = UserAreaSubscription.objects.all()
 
     # for testing, pushes a test alert to all also requires "test" in the message 
