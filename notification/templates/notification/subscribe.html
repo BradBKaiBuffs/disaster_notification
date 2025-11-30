@@ -11,6 +11,7 @@
             Create an account and pick what alerts you want.
         </div>
 
+        <!-- user registration + subscription in one form -->
         <form method="POST" class="card p-4 shadow">
             {% csrf_token %}
 
@@ -21,7 +22,7 @@
 
             <h5 class="mt-3">Alert Settings</h5>
 
-            <!-- AREA NO LONGER USED
+            <!-- AREA NO LONGER USED (kept for reference only)
             <label class="form-label">Area</label>
             <input
                 type="text"
@@ -30,15 +31,18 @@
                 class="form-control"
                 list="area-suggestions"
                 value="{{ sub_form.initial.area }}"
-            > -->
+            >
+            -->
 
-            <!-- <datalist id="area-suggestions">
+            <!-- 
+            <datalist id="area-suggestions">
                 {% for a in areas %}
                     <option value="{{ a }}"></option>
                 {% endfor %}
-            </datalist> -->
+            </datalist>
+            -->
 
-            <!-- state -->
+            <!-- state dropdown -->
             <label class="form-label mt-2">State</label>
             <select id="state-select" name="state" class="form-control state-select">
                 <option value="">Select State</option>
@@ -47,7 +51,7 @@
                 {% endfor %}
             </select>
 
-            <!-- county -->
+            <!-- county dropdown (populated after picking a state) -->
             <label class="form-label mt-2">County</label>
             <select name="county" class="form-control county-select">
                 <option value="">Select County</option>
@@ -56,10 +60,15 @@
             <!-- phone number -->
             <label class="form-label mt-3">Phone Number</label>
             {{ sub_form.phone_number }}
-            <!-- added Opt In message since it's a requirement by Vonage for a toll free number -->
-            <p>By entering your phone number, you agree to receive alert-related messages from Disaster Notification page at the phone number provided. There are no marketing messages because this is a school project.</p>
 
-            <!-- carrier removed but still exists in model
+            <!-- opt-in requirement (Vonage) -->
+            <p>
+                By entering your phone number, you agree to receive alert-related messages
+                from Disaster Notification page at the phone number provided.
+                No marketing messages will be sent.
+            </p>
+
+            <!-- carrier removed but kept for legacy reference
             <label class="form-label mt-3">Carrier</label>
             <select name="carrier" class="form-control">
                 <option value="">Select Carrier</option>
@@ -69,7 +78,8 @@
                 <option value="messaging.sprintpcs.com">Sprint</option>
                 <option value="mms.uscc.net">US Cellular</option>
                 <option value="message.alltel.com">AllTel</option>
-            </select> -->
+            </select>
+            -->
 
             <!-- notification type -->
             <label class="form-label mt-3">Notification Type</label>
@@ -80,14 +90,16 @@
 
     {% else %}
 
+        <!-- logged-in user indicator -->
         <div class="alert alert-success">
             Logged in as <strong>{{ user.username }}</strong>
         </div>
 
+        <!-- subscription form for logged-in users -->
         <form method="POST" class="card p-4 shadow">
             {% csrf_token %}
 
-            <!-- AREA NO LONGER USED
+            <!-- AREA NO LONGER USED (kept for reference)
             <label class="form-label">Area</label>
             <input
                 type="text"
@@ -96,15 +108,18 @@
                 class="form-control"
                 list="area-suggestions"
                 value="{{ sub_form.instance.area }}"
-            > -->
+            >
+            -->
 
-            <!-- <datalist id="area-suggestions">
+            <!-- 
+            <datalist id="area-suggestions">
                 {% for a in areas %}
                     <option value="{{ a }}"></option>
                 {% endfor %}
-            </datalist> -->
+            </datalist>
+            -->
 
-            <!-- state -->
+            <!-- state dropdown -->
             <label class="form-label mt-2">State</label>
             <select name="state" class="form-control state-select">
                 <option value="">Select State</option>
@@ -113,7 +128,7 @@
                 {% endfor %}
             </select>
 
-            <!-- county -->
+            <!-- county dropdown -->
             <label class="form-label mt-2">County</label>
             <select name="county" class="form-control county-select">
                 <option value="">Select County</option>
@@ -122,10 +137,14 @@
             <!-- phone number -->
             <label class="form-label mt-3">Phone Number</label>
             {{ sub_form.phone_number }}
-            <!-- added Opt In message since it's a requirement by Vonage for a toll free number -->
-             <p>By entering your phone number, you agree to receive alert-related messages from Disaster Notification page at the phone number provided. There are no marketing messages because this is a school project.</p>
 
-            <!-- carrier removed but still exists in model
+            <!-- opt-in requirement -->
+            <p>
+                By entering your phone number, you agree to receive alert-related messages.
+                No marketing messages will be sent because this is a school project.
+            </p>
+
+            <!-- carrier removed (legacy)
             <label class="form-label mt-3">Carrier</label>
             <select name="carrier" class="form-control">
                 <option value="">Select Carrier</option>
@@ -135,7 +154,8 @@
                 <option value="messaging.sprintpcs.com">Sprint</option>
                 <option value="mms.uscc.net">US Cellular</option>
                 <option value="message.alltel.com">AllTel</option>
-            </select> -->
+            </select>
+            -->
 
             <!-- notification type -->
             <label class="form-label mt-3">Notification Type</label>
@@ -147,35 +167,39 @@
     {% endif %}
 </div>
 
+<script type="application/json" id="county-map-json">
+    {{ county_map_json|escapejs }}
+</script>
+
 <script>
-    // county_map_json
-    const COUNTY_MAP = {{ county_map_json|safe }};
+    // read JSON
+    const COUNTY_MAP = JSON.parse(
+        document.getElementById("county-map-json").textContent
+    );
 
-    document.addEventListener("DOMContentLoaded", function () {
+    // state dropdown
+    document.querySelectorAll(".state-select").forEach(function (stateSel) {
 
-        document.querySelectorAll(".state-select").forEach(function (stateSel) {
+        stateSel.addEventListener("change", function () {
+            const state = this.value;
 
-            stateSel.addEventListener("change", function () {
+            // county dropdown
+            const form = this.closest("form");
+            const countySelect = form.querySelector(".county-select");
 
-                const state = this.value;
-                const form = this.closest("form");
-                const countySelect = form.querySelector(".county-select");
+            // reset counties
+            countySelect.innerHTML = '<option value="">Select County</option>';
 
-                // clear existing counties
-                countySelect.innerHTML = '<option value="">Select County</option>';
+            // no county listed
+            if (!state || !COUNTY_MAP[state]) return;
 
-                if (!state || !COUNTY_MAP[state]) {
-                    return;
-                }
-
-                COUNTY_MAP[state].forEach(function (ct) {
-                    const opt = document.createElement("option");
-                    opt.value = ct;
-                    opt.textContent = ct;
-                    countySelect.appendChild(opt);
-                });
+            // grab counties for selected state
+            COUNTY_MAP[state].forEach(function (ct) {
+                const opt = document.createElement("option");
+                opt.value = ct;
+                opt.textContent = ct;
+                countySelect.appendChild(opt);
             });
-
         });
 
     });

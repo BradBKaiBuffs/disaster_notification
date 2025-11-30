@@ -255,8 +255,9 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
 
     subs = UserAreaSubscription.objects.all()
 
-    # for testing, pushes a test alert to all
-    testing = "test" in alerts.event.lower()
+    # for testing, pushes a test alert to all also requires "test" in the message 
+    first_alert = alerts[0]
+    testing = "test" in first_alert.event.lower()
 
     for sub in subs:
 
@@ -267,7 +268,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
                 # continue
 
             # check for fips match
-            if not sub_alert_matching(alerts, sub):
+            if not sub_alert_matching(first_alert, sub):
                 continue
 
             if sub.notification_type.lower() != "all" and sub.notification_type.lower() != alert_kind:
@@ -352,16 +353,17 @@ def combined_alert_summary(alerts):
 
     # email
     for alert in alerts:
-        email_contents.append(
-            f"""
-            Event: {alert.event}
-            County: {alert.county}
-            Severity: {alert.severity}
-            Expires: {alert.expires}
-        """
+        email_line = (
+            "Event:" + {alert.event} + "\n"
+            "County:" + {alert.county} + "\n"
+            "Severity:" + {alert.severity} + "\n"
+            "Expires:" + {alert.expires} + "\n"
         )
-    # sms
-    sms_contents.append(f"{alert.event} in {alert.county}")
+
+    email_contents.append(email_line)
+
+    # sms will just show alert event due to character restrictions
+    sms_contents.append(alert.event)
 
     email_body = "Here are your current active alerts:".join(email_contents)
     sms_body = "Active alerts:" + " | ".join(sms_contents)
