@@ -18,13 +18,11 @@ class UserAreaSubscriptionForm(forms.ModelForm):
             #     "class": "form-control",
             #     "placeholder": "Type area name",
             # }),
-            "state": forms.TextInput(attrs={
+            "state": forms.Select(attrs={
                 "class": "form-control",
-                "placeholder": "Type state name",
             }),
-            "county": forms.TextInput(attrs={
+            "county": forms.Select(attrs={
                 "class": "form-control",
-                "placeholder": "Type county name",
             }),
             "phone_number": forms.TextInput(attrs={
                 "class": "form-control",

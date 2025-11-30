@@ -64,7 +64,8 @@
                 <tr>
                     <!-- removed carrier but still exists in model -->
                     <th>Event</th>
-                    <!-- <th>Area</th> -->
+                    <!-- while this is not used for searching, it does provide value for readability for area subscribed -->
+                    <th>Area</th>
                     <th>Severity</th>
                     <th>Urgency</th>
                     <th>Sent</th>
@@ -81,7 +82,8 @@
                     {% endif %}
                 ">
                     <td>{{ alert.event }}</td>
-                    <!-- <td>{{ alert.area_desc }}</td> -->
+                    <!-- while this is not used for searching, it does provide value for readability for area subscribed -->
+                    <td>{{ alert.area_desc }}</td>
                     <td>{{ alert.severity }}</td>
                     <td>{{ alert.urgency }}</td>
                     <td>{{ alert.sent|date:'Y-m-d H:i' }}</td>

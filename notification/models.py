@@ -81,7 +81,7 @@ class UserAreaSubscription(models.Model):
     notification_type = models.CharField(
         max_length=50,
         choices=NOTIFY_CHOICES,
-        default="new",
+        default="New",
     )
 
     # timestamp when created

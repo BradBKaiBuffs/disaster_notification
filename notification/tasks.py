@@ -226,24 +226,39 @@ def format_phone_number(raw_number):
     
     return "+" + digits
 
-# task checks for all user subscriptions for alerts and sends out messages
-def notify_users_task(alert, alert_kind):
 
-    # addresses circular import error that I was receiving
-    from notification.views import sub_alert_matching
+def sub_alert_matching(alert, sub):
 
-    message = alert_message_task(alert)
+    from notification.views import grab_fips
+
+    # use geocode same list from alert
+    same_raw = alert.geocode.get("SAME", [])
+    if not same_raw:
+        return False
+
+    # take the last five digits to match the fips code from storm event data
+    alert_fips = []
+    for code in same_raw:
+        code_str = str(code).strip()
+        alert_fips.append(code_str[-5:])
+
+    user_fips = grab_fips(sub)
+    if not user_fips:
+        return False
+
+    user_fips = str(user_fips).zfill(5)
+
+    return user_fips in alert_fips
+
+# due to the sheer amount of sms/emails one subscription and chug out, decided to combine alerts into a list that is sent in one sms/email per cycle if new active alert status exist
+def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
 
     subs = UserAreaSubscription.objects.all()
 
     # for testing, pushes a test alert to all
-    testing = "test" in alert.event.lower()
+    testing = "test" in alerts.event.lower()
 
     for sub in subs:
-
-        # check if the subscription still exists
-        if not UserAreaSubscription.objects.filter(id=sub.id).exists():
-            continue
 
         if not testing:
 
@@ -252,50 +267,29 @@ def notify_users_task(alert, alert_kind):
                 # continue
 
             # check for fips match
-            if not sub_alert_matching(alert, sub):
+            if not sub_alert_matching(alerts, sub):
                 continue
 
             if sub.notification_type.lower() != "all" and sub.notification_type.lower() != alert_kind:
                 continue
-
-        if AlertNotificationTracking.objects.filter(user=sub.user, alert=alert).exists():
-            continue
 
         # for sms alert notifications
         if sub.phone_number:
 
             # go through the check to make sure the +1 exists
             to_number = format_phone_number(sub.phone_number)
-
-            sms_text = (
-                f"{alert.event} {alert_kind.capitalize()} alert for {sub.county}. See details at: https://disasternotification-production.up.railway.app"
-            )
-
-            try:
-                result = send_sms_vonage(to_number, sms_text)
-                print("sms sent:", result)
-
-            except Exception as e:
-                print("sms failed:", e)
+            send_sms_vonage(to_number, sms_body)
 
         # for email alert notifications
         if sub.user.email:
-            try:
                 send_mail(
-                    subject=f"{alert.event} Alert",
-                    message=message,
-                    from_email=None,
+                    subject=f"{alerts.kind.capitalize()} Alerts ({len(alerts)})",
+                    message=email_body,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[sub.user.email],
                     fail_silently=True
                 )
-            except Exception as e:
-                print("error:", e)
-        
-        # store tracking so user does not get duplicate alerts
-        AlertNotificationTracking.objects.create(
-            user=sub.user,
-            alert=alert
-        )
+    
 
 # checks for alerts that are close to expiration and notifies users
 @shared_task
@@ -347,16 +341,40 @@ def send_test_alert_to_user_task(alert, user):
     except Exception as e:
         print("Test email failed:", e)
 
+# found that an county can easily push out dozens of alerts so this is to limit the amount of texts/emails sent
+def combined_alert_summary(alerts):
+
+    if not alerts:
+        print("No active alerts")
+
+    email_contents = []
+    sms_contents = []
+
+    # email
+    for alert in alerts:
+        email_contents.append(
+            f"""
+            Event: {alert.event}
+            County: {alert.county}
+            Severity: {alert.severity}
+            Expires: {alert.expires}
+        """
+        )
+    # sms
+    sms_contents.append(f"{alert.event} in {alert.county}")
+
+    email_body = "Here are your current active alerts:".join(email_contents)
+    sms_body = "Active alerts:" + " | ".join(sms_contents)
+
+    return (email_body, sms_body)
 
 # with new subscriptions added to user page, this will activate and send the active alerts to the user via notify_users_task
 def send_active_alerts_to_user_task(subscription):
-    
-    # to address circular import error, importing from inside
-    from notification.views import sub_alert_matching
 
     user = subscription.user
     now = timezone.now()
 
+    # grab all the active alerts
     active_alerts = (
         NoaaAlert.objects
         .filter(
@@ -367,16 +385,41 @@ def send_active_alerts_to_user_task(subscription):
         .exclude(event__icontains="test")
     )
 
+    # filter through the active alerts that fits the subscription made
+    matching_alerts = []
     for alert in active_alerts:
-
-        # NOT USED ANYMORE
-        # if subscription.area.lower() in alert.area_desc.lower():
-
-        # uses fips to check
         if sub_alert_matching(alert, subscription):
-            already_sent = AlertNotificationTracking.objects.filter(user=user, alert=alert).exists()
-                
-            if already_sent:
-                continue
+            matching_alerts.append(alert)
+    
+    # filter through the alerts that were already marked as sent
+    new_alerts = []
+    for alert in matching_alerts:
+        already_sent = AlertNotificationTracking.objects.filter(
+            user=user, alert=alert
+        ).exists()
 
-            notify_users_task(alert, "new")
+        if not already_sent:
+            new_alerts.append(alert)
+
+    # no new alerts means nothing gets sent
+    if not new_alerts:
+        return
+
+    # mark the alerts as tracked
+    for alert in new_alerts:
+            AlertNotificationTracking.objects.create(
+                user=user,
+                alert=alert,
+                sent_at=timezone.now(),
+            )
+
+    email_body, sms_body = combined_alert_summary(new_alerts)
+
+    notify_users_task(
+        alerts=new_alerts,
+        alert_kind="new",
+        email_body=email_body,
+        sms_body=sms_body
+    )
+
+

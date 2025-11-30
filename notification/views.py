@@ -38,31 +38,24 @@ from django.contrib.auth.models import User
 
 # uses fips code for user matching the county/state since area_desc is not desirable for a selector
 def grab_fips(sub):
-    try:
-        return(
-            StormEvent.objects
-            .filter(state__iexact=sub.state, county__iexact=sub.county)
-            .values_list("county_fips", flat=True)
-            .distinct()
-            .first() 
-        )
-    except:
+    # match row
+    row = (
+        StormEvent.objects
+        .filter(state__iexact=sub.state, county__iexact=sub.county)
+        .values("state_fips", "county_fips")
+        .first()
+    )
+
+    if not row:
         return None
 
-# checks the alert against the subscription with fips
-def sub_alert_matching(alert, sub):
+    # the fip code consists of two digits designated for state and three digits designated for a "zone" but for the sake of simplicity for this project I'm just going to label it "county"
+    state_fips = str(row["state_fips"]).strip().zfill(2)
+    county_fips = str(row["county_fips"]).strip().zfill(3)
 
-    fips_list = alert.geocode.get("FIPS6", [])
+    # combine the five digit code
+    return state_fips + county_fips
 
-    if not fips_list:
-        return False
-    
-    user_fips = grab_fips(sub)
-
-    if not user_fips:
-        return False
-    
-    return str(user_fips) in fips_list
 
 # disaster events grouped by year
 def grab_disaster_events_per_year():
@@ -74,6 +67,7 @@ def grab_disaster_events_per_year():
     event_data = event_data.order_by("begin_year")
 
     return event_data
+
 
 # create the raw grouped info for disaster heatmap
 def grab_disaster_heatmap_data():
@@ -392,7 +386,7 @@ def send_subscription_notifications(user, sub):
         # sends an email for new subscription
         send_mail(
             subject="Subscription Created",
-            message=f"You subscribed to alerts for {sub.county}, {sub.state}.",
+            message=f"You subscribed to alerts for {sub.county}, {sub.state}. To subscribe to more, visit https://disasternotification-production.up.railway.app/",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=True,
@@ -406,7 +400,7 @@ def send_subscription_notifications(user, sub):
 
             send_sms_vonage(
                 to_number=formatted_number,
-                text=f"You subscribed to {sub.county}, {sub.state}."
+                text=f"You subscribed to alerts for {sub.county}, {sub.state}. To subscribe to more, visit https://disasternotification-production.up.railway.app/"
             )
     except Exception as e:
         print("Failed to send", e)
@@ -572,13 +566,16 @@ def subscribe_view(request):
 @login_required
 # personalized user page view
 def user_alerts_view(request):
+    # debug
+    # print("user:", request.user)
 
     # grabs all subscriptions for the logged in user and is used for alerts and charts
     subscriptions = UserAreaSubscription.objects.filter(user=request.user)
+    # debugging
+    # print("subs:", list(subscriptions.values("state", "county")))
+    # print("sub count:", subscriptions.count())
 
     active_alerts = []
-
-    all_alerts = NoaaAlert.objects.all()
 
     # added this to timestamp and compare alerts for expiration removal
     now = timezone.now()
@@ -589,16 +586,61 @@ def user_alerts_view(request):
             expires__gt=now,
         )
         .exclude(message_type__iexact="Cancel")
-        .exclude(event__icontains="test")
+        #.exclude(event__icontains="test")
     )
-
+    # debugging
+    # print("active alert count:", all_alerts.count())
     # puts the alerts into all alerts
     for alert in all_alerts:
         for sub in subscriptions:
-            if sub_alert_matching(alert, sub):
-                active_alerts.append(alert)
-                break
-    
+
+                # debug for actual alert matching in the loop
+                # print("alert ID:", alert.id)
+                # print("alert event:", alert.event)
+
+                # same code from geocode comprises of fips
+                same_raw = alert.geocode.get("SAME", [])
+                same_normalized = []
+
+                for f in same_raw:
+                    f_str = str(f).strip()
+
+                    # take the last 5 digits since same starts with a 0 sometimes
+                    last5 = f_str[-5:]
+
+                    same_normalized.append(last5)
+
+                # debug
+                # print("raw same list:", same_raw)
+                # print("normalized same fips list:", same_normalized)
+
+                # user sub info
+                # print("user subscription — State and county:", sub.state, " ", sub.county)
+
+                # storm event table fips
+                user_fips = grab_fips(sub)
+                # debug
+                # print("user fips (raw):", user_fips)
+
+                if user_fips:
+                    user_fips_norm = str(user_fips).zfill(5)
+                else:
+                    user_fips_norm = None
+
+                # deubg
+                # print("user fips (normalized):", user_fips_norm)
+
+                # check 
+                if user_fips_norm in same_normalized:
+                    # print("adding alert for match")
+                    active_alerts.append(alert)
+                    break
+                # else:
+                    # debug
+                    # print("no match")
+                # debug
+                # print("end matching loop")
+
     # NOT USED ANYMORE
     # grabs all areas from active alerts
     # raw_areas = (
@@ -647,28 +689,31 @@ def user_alerts_view(request):
             .order_by("county")
         )
 
-    selected_county = request.GET.get("county", "").strip()
+    # ties the subscription to the graph displays 
+    if subscriptions.exists():
+        sub = subscriptions.first()
 
-    # if no county selected and user has subscriptions, then default to the first one
-    if not selected_county and subscriptions.exists():
-        selected_county = subscriptions.first().county
+        # user manually selected
+        selected_state = request.GET.get("state", "").strip() or sub.state
+        selected_county = request.GET.get("county", "").strip() or sub.county
 
-    # determine the state for the selected county and finds one matching row and grabs the state
-    selected_state = None
+    else:
+        selected_state = request.GET.get("state", "").strip()
+        selected_county = request.GET.get("county", "").strip()
 
-    # find the state for the selected county
-    if selected_county:
-        # filter rows for that county paired with the first state found
-        row = (
-            StormEvent.objects
-            .filter(county__iexact=selected_county)
-            .values_list("state", flat=True)
-            .first()
-        )
+    # # find the state for the selected county
+    # if selected_county:
+    #     # filter rows for that county paired with the first state found
+    #     row = (
+    #         StormEvent.objects
+    #         .filter(county__iexact=selected_county)
+    #         .values_list("state", flat=True)
+    #         .first()
+    #     )
 
-        # update if nothing selected
-        if row:
-            selected_state = row
+    #     # update if nothing selected
+    #     if row:
+    #         selected_state = row
 
     # notification type if user posted a form
     selected_type = request.POST.get("notification_type", "")

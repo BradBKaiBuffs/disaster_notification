@@ -32,15 +32,15 @@
                 value="{{ sub_form.initial.area }}"
             > -->
 
-            <datalist id="area-suggestions">
+            <!-- <datalist id="area-suggestions">
                 {% for a in areas %}
                     <option value="{{ a }}"></option>
                 {% endfor %}
-            </datalist>
+            </datalist> -->
 
             <!-- state -->
             <label class="form-label mt-2">State</label>
-            <select id="state-select" name="state" class="form-control">
+            <select id="state-select" name="state" class="form-control state-select">
                 <option value="">Select State</option>
                 {% for st in states %}
                     <option value="{{ st }}">{{ st }}</option>
@@ -49,13 +49,14 @@
 
             <!-- county -->
             <label class="form-label mt-2">County</label>
-            <select id="county-select" name="county" class="form-control">
+            <select name="county" class="form-control county-select">
                 <option value="">Select County</option>
             </select>
 
             <!-- phone number -->
             <label class="form-label mt-3">Phone Number</label>
             {{ sub_form.phone_number }}
+            <!-- added Opt In message since it's a requirement by Vonage for a toll free number -->
             <p>By entering your phone number, you agree to receive alert-related messages from Disaster Notification page at the phone number provided. There are no marketing messages because this is a school project.</p>
 
             <!-- carrier removed but still exists in model
@@ -97,15 +98,15 @@
                 value="{{ sub_form.instance.area }}"
             > -->
 
-            <datalist id="area-suggestions">
+            <!-- <datalist id="area-suggestions">
                 {% for a in areas %}
                     <option value="{{ a }}"></option>
                 {% endfor %}
-            </datalist>
+            </datalist> -->
 
             <!-- state -->
             <label class="form-label mt-2">State</label>
-            <select id="state-select" name="state" class="form-control">
+            <select name="state" class="form-control state-select">
                 <option value="">Select State</option>
                 {% for st in states %}
                     <option value="{{ st }}">{{ st }}</option>
@@ -114,13 +115,14 @@
 
             <!-- county -->
             <label class="form-label mt-2">County</label>
-            <select id="county-select" name="county" class="form-control">
+            <select name="county" class="form-control county-select">
                 <option value="">Select County</option>
             </select>
 
             <!-- phone number -->
             <label class="form-label mt-3">Phone Number</label>
             {{ sub_form.phone_number }}
+            <!-- added Opt In message since it's a requirement by Vonage for a toll free number -->
              <p>By entering your phone number, you agree to receive alert-related messages from Disaster Notification page at the phone number provided. There are no marketing messages because this is a school project.</p>
 
             <!-- carrier removed but still exists in model
@@ -146,29 +148,36 @@
 </div>
 
 <script>
-    // when a state is selected it matches the counties for it
-    document.getElementById("state-select").addEventListener("change", function () {
+    // county_map_json
+    const COUNTY_MAP = {{ county_map_json|safe }};
 
-        let state = this.value;
+    document.addEventListener("DOMContentLoaded", function () {
 
-        // asking backend for county list
-        fetch(`/ajax/get-counties/?state=${state}`)
-            .then(r => r.json())
-            .then(data => {
+        document.querySelectorAll(".state-select").forEach(function (stateSel) {
 
-                let countySelect = document.getElementById("county-select");
+            stateSel.addEventListener("change", function () {
 
-                // reset dropdown
+                const state = this.value;
+                const form = this.closest("form");
+                const countySelect = form.querySelector(".county-select");
+
+                // clear existing counties
                 countySelect.innerHTML = '<option value="">Select County</option>';
 
-                // add county options
-                data.counties.forEach(ct => {
-                    let opt = document.createElement("option");
+                if (!state || !COUNTY_MAP[state]) {
+                    return;
+                }
+
+                COUNTY_MAP[state].forEach(function (ct) {
+                    const opt = document.createElement("option");
                     opt.value = ct;
                     opt.textContent = ct;
                     countySelect.appendChild(opt);
                 });
             });
+
+        });
+
     });
 </script>
 
