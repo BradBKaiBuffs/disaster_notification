@@ -258,7 +258,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
     if isinstance(alerts, NoaaAlert):
         alerts = [alerts]
 
-    subs = UserAreaSubscription.objects.all()
+    subs = UserAreaSubscription.objects.all().exclude(event__icontains="test")
 
     # for testing, pushes a test alert to all also requires "test" in the message 
     testing = "test" in alerts[0].event.lower()
@@ -277,6 +277,15 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
 
             if sub.notification_type.lower() != "all" and sub.notification_type.lower() != alert_kind:
                 continue
+        
+        # check for alerts already sent
+        already_sent = AlertNotificationTracking.objects.filter(
+            user=sub.user,
+            alert=alerts[0],
+        ).exists()
+
+        if already_sent:
+            continue
 
         # for sms alert notifications
         if sub.phone_number:
@@ -288,7 +297,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
                 send_sms_vonage(to_number, sms_body)
 
         # for email alert notifications
-        if sub.user.email:
+        if sub.user.email and email_body:
                 send_mail(
                     subject=f"Alerts ({len(alerts)})",
                     message=email_body,
@@ -296,7 +305,13 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
                     recipient_list=[sub.user.email],
                     fail_silently=True
                 )
-    
+
+        # track that alert was sent to user
+        AlertNotificationTracking.objects.create(
+            user=sub.user,
+            alert=alerts[0],
+            sent_at=timezone.now()
+        )
 
 # checks for alerts that are close to expiration and notifies users
 @shared_task
@@ -315,7 +330,14 @@ def expiring_alerts_task():
     )
 
     for alert in expiring:
-        notify_users_task(alert, "expires")
+        email_body, sms_body = combined_alert_summary([alert])
+
+        notify_users_task(
+            alerts=[alert],
+            alert_kind="expires",
+            email_body=email_body,
+            sms_body=sms_body,
+        )
 
     return f"{expiring.count()} alerts for expiration"
 
