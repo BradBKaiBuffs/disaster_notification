@@ -45,16 +45,14 @@ def forecast_30_days_out(state, county, event_type):
 
     if df.empty:
         return 0.0
-
+    
+    # count the number of disaster events over the span of available years then round to 2 decimal points
     average_events = len(df) / df["begin_year"].nunique()
     return round(average_events, 2)
 
-
+# assigns a percentage on each type of disaster that was counted in the historical data for the county and creates the probability of it happening in next 30 days
 def type_probability(state, county):
-    """
-    Computes the percentage chance for each disaster type
-    based on how many years that type occurred in the next month.
-    """
+
     today = datetime.date.today()
     next_month = (today.month % 12) + 1
 
@@ -74,30 +72,30 @@ def type_probability(state, county):
 
     total_years = df["begin_year"].nunique()
 
-    # Count number of years in which each event type occurred
+    # count number of years in which each event type occurred
     type_years = (
         df.groupby("event_type")["begin_year"]
         .nunique()
         .reset_index(name="years_with_events")
     )
 
-    # Convert to % chance
+    # percent is based on years counted of each disaster type
     type_years["probability"] = (
         type_years["years_with_events"] / total_years * 100
     ).round(1)
 
     return type_years.to_dict("records")
 
-
+# classification based on count where two events or less are low and above 4 events are high chance
 def classify_disaster_chance(average_events):
-    if average_events <= 3:
+    if average_events <= 2:
         return "Low chance"
-    elif average_events <= 7:
+    elif average_events <= 4:
         return "Moderate chance"
     else:
         return "High chance"
 
-
+# just advice on what to do based on the chance scoring
 def prescription(chance):
     if chance == "High chance":
         return (
@@ -154,12 +152,13 @@ def forecasting_view(request):
         selected_event_type
     )
 
-    # prediction
+    # prediction based on score count but this is not shown to user since it looks confusing
     chance = classify_disaster_chance(forecast_events)
     
-    # prescription
+    # prescription based on score count
     advice = prescription(chance)
 
+    # score % of chosen state/county
     type_probabilities = type_probability(
     selected_state,
     selected_county
