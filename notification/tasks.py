@@ -258,7 +258,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
     if isinstance(alerts, NoaaAlert):
         alerts = [alerts]
 
-    subs = UserAreaSubscription.objects.all().exclude(event__icontains="test")
+    subs = UserAreaSubscription.objects.all()
 
     # for testing, pushes a test alert to all also requires "test" in the message 
     testing = "test" in alerts[0].event.lower()
