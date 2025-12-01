@@ -1,15 +1,140 @@
 {% extends "notification/base.html" %}
-{% block title %}Disaster Forecasting Page{% endblock %}
+{% load static %}
 
 {% block content %}
+<div class="container mt-4">
 
-<h1 class="mb-4">Disaster Forecasting Page</h1>
+    <h2>Disaster Forecasting</h2>
 
-<p>
-    Guidance Source:
-    <a href="{{ ready_link }}" target="_blank">
-        Ready.gov – Severe Weather Preparedness
-    </a>
-</p>
+    <p class="mt-2">
+        This page forecasts disaster activity for the next 30 days based on the state and county chosen. The forecast is based on historical
+        NOAA Storm Event data (2015–2025).
+    </p>
+
+    <hr class="my-4">
+
+    <!-- state and county -->
+    <form method="get" class="mb-3 w-50">
+
+        <!-- state -->
+        <label class="form-label">Select State</label>
+        <select name="state" id="forecast-state" class="form-control">
+            <option value="">Select State</option>
+            {% for st in states %}
+                <option value="{{ st }}" {% if st == selected_state %}selected{% endif %}>
+                    {{ st }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <!-- county -->
+        <label class="form-label mt-2">Select County</label>
+        <select name="county" id="forecast-county" class="form-control">
+            <option value="">Select County</option>
+        </select>
+
+        <button class="btn btn-secondary mt-3">Update</button>
+    </form>
+
+    <hr class="my-4">
+
+    <!-- forecast results -->
+    <h3>
+        Forecast results for 
+        {{ selected_county|default:"(No County Selected)" }}, 
+        {{ selected_state|default:"(No State Selected)" }}
+    </h3>
+
+    <table class="table table-striped mt-3 w-75">
+        <tbody>
+            <!-- keeping out since it looks too confusing -->
+            <!--<tr>
+                <th>Forecasted number of events for next 30 days</th>
+                <td>{{ forecast_events }}</td>
+            </tr>
+            <tr>
+                <th>Disaster Event Chance</th>
+                <td>{{ chance }}</td>
+            </tr>-->
+        <tr>
+            <th>Disaster Type Probabilities (Next 30 Days)</th>
+            <td>
+                {% if type_probabilities %}
+                    <ul class="mb-0">
+                        {% for row in type_probabilities %}
+                            <li>
+                                <strong>{{ row.event_type }}:</strong>
+                                {{ row.probability }}%
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <span class="text-muted">No historical data available.</span>
+                {% endif %}
+            </td>
+        </tr>
+            <tr>
+                <th>Preparedness Recommendation(s)</th>
+                <td>{{ advice }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p class="mt-3">
+        Guidance Source:
+        <a href="{{ ready_link }}" target="_blank">
+            Ready.gov's Severe Weather Preparedness webpage
+        </a>
+    </p>
+
+    <hr class="my-4">
+
+<script>
+
+    function loadForecastCounties(initialLoad=false) {
+        let stateSelect = document.getElementById("forecast-state");
+        let countySelect = document.getElementById("forecast-county");
+
+        let state = stateSelect.value;
+
+        // reset
+        countySelect.innerHTML = '<option value="">Select County</option>';
+
+        if (!state) {
+            return;  // nothing selected yet
+        }
+
+        // grab county list
+        fetch(`/ajax/get-counties/?state=${encodeURIComponent(state)}`)
+            .then(r => r.json())
+            .then(data => {
+
+                data.counties.forEach(ct => {
+                    let opt = document.createElement("option");
+                    opt.value = ct;
+                    opt.textContent = ct;
+                    countySelect.appendChild(opt);
+                });
+
+                {% if selected_county %}
+                    if (initialLoad) {
+                        countySelect.value = "{{ selected_county }}";
+                    }
+                {% endif %}
+            })
+            .catch(err => {
+                console.error("Error loading counties:", err);
+            });
+    }
+
+    // when a state is selected, load counties
+    document.getElementById("forecast-state").addEventListener("change", function () {
+        loadForecastCounties(false);
+    });
+
+    window.addEventListener("load", function () {
+        loadForecastCounties(true);
+    });
+</script>
 
 {% endblock %}

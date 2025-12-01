@@ -4,6 +4,15 @@
 <div class="container mt-4">
 
     <h2 class="mb-3">Subscribe to Notification</h2>
+    
+    <!-- sub success message -->
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }}">
+                {{ msg }}
+            </div>
+        {% endfor %}
+    {% endif %}
 
     {% if not user.is_authenticated %}
 
