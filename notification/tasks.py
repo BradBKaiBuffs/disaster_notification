@@ -282,6 +282,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
         already_sent = AlertNotificationTracking.objects.filter(
             user=sub.user,
             alert=alerts[0],
+            alert_kind=alert_kind,
         ).exists()
 
         if already_sent:
@@ -310,6 +311,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
         AlertNotificationTracking.objects.create(
             user=sub.user,
             alert=alerts[0],
+            alert_kind=alert_kind,
             sent_at=timezone.now()
         )
 
@@ -439,6 +441,7 @@ def send_active_alerts_to_user_task(subscription):
             AlertNotificationTracking.objects.create(
                 user=user,
                 alert=alert,
+                alert_kind=alert_kind,
                 sent_at=timezone.now(),
             )
 
