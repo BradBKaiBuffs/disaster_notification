@@ -46,7 +46,7 @@
 
                 {% if user.is_staff %}
                     <!-- only accessible for admins who are signed in -->
-                    <a href="/dn-admin/" class="btn btn-primary btn-sm me-2">Admin</a>
+                    <a href="/dn_admin/" class="btn btn-primary btn-sm me-2">Admin</a>
                     <a href="{% url 'test_alert' %}" class="btn btn-warning btn-sm me-2">Test Alert</a>
                     <a href="{% url 'test_email' %}" class="btn btn-warning btn-sm me-2">Test Email</a>
                     <a href="{% url 'test_sms' %}" class="btn btn-warning btn-sm me-2">Test SMS</a>

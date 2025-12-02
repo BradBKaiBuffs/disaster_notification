@@ -426,7 +426,9 @@ def send_active_alerts_to_user_task(subscription):
     new_alerts = []
     for alert in matching_alerts:
         already_sent = AlertNotificationTracking.objects.filter(
-            user=user, alert=alert
+            user=user, 
+            alert=alert, 
+            alert_kind=alert_kind,
         ).exists()
 
         if not already_sent:

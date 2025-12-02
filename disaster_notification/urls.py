@@ -17,10 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from notification.views import upload_csv_view
+from django.contrib.admin.views.decorators import staff_member_required
 
 urlpatterns = [
-    path('dn-admin/redis/', include('dj_redis_panel.urls')),
-    path('dn-admin/', admin.site.urls),
+    path('dn_admin/', admin.site.urls),
+    path('redis/', staff_member_required(include('dj_redis_panel.urls'))),
     path('', include('notification.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path("upload_csv", upload_csv_view, name="upload_csv"),

@@ -87,33 +87,33 @@ TEMPLATES = [
     },
 ]
 
-# OWASP: Prevent MIME sniffing
-SECURE_CONTENT_TYPE_NOSNIFF = True
+# # OWASP: Prevent MIME sniffing
+# SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# OWASP: Strict-Transport-Security (HSTS)
-# one year
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# # OWASP: Strict-Transport-Security (HSTS)
+# # one year
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
 
-# Redirect HTTP to HTTPS
-SECURE_SSL_REDIRECT = True
+# # Redirect HTTP to HTTPS
+# SECURE_SSL_REDIRECT = True
 
-# Use secure cookies
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# # Use secure cookies
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
 
-# Extra cookie hardening
-SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
+# # Extra cookie hardening
+# SESSION_COOKIE_HTTPONLY = True
+# CSRF_COOKIE_HTTPONLY = True
 
-# Disallow embedding in iframes
-X_FRAME_OPTIONS = "DENY"
+# # Disallow embedding in iframes
+# X_FRAME_OPTIONS = "DENY"
 
-# Tell Django your proxy uses HTTPS (Railway)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# # Tell Django your proxy uses HTTPS (Railway)
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-WSGI_APPLICATION = 'disaster_notification.wsgi.application'
+# WSGI_APPLICATION = 'disaster_notification.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -205,14 +205,17 @@ VONAGE_API_SECRET = os.environ.get("VONAGE_API_SECRET")
 VONAGE_FROM = os.environ.get("VONAGE_FROM", "DisasterAlert")
 VONAGE_NUMBER = os.environ.get("VONAGE_NUMBER")
 
+ADMIN_URL = "dn_admin/"
+
 JAZZMIN_SETTINGS = {
     "site_title": "Weather Notifications Admin",
+    "site_url": "/dn_admin/",
 
     "topmenu_links": [
         # links
-        {"name": "Admin Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Admin Home", "url": "admin:index"},
         {"name": "Dashboard", "url": "/", "icon": "fas fa-chart-line"},
-        {"name": "Upload CSV", "url": "/upload_csv/", "icon": "fas fa-file-upload"},
+        {"name": "Upload CSV", "url": "upload_csv/", "icon": "fas fa-file-upload"},
     ],
 }
 
@@ -250,12 +253,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # add static root files
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_DIRS = BASE_DIR / 'static',
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
