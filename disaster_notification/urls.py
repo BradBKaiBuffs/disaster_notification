@@ -19,8 +19,8 @@ from django.urls import path, include
 from notification.views import upload_csv_view
 
 urlpatterns = [
-    path('admin/redis/', include('dj_redis_panel.urls')),
-    path('admin/', admin.site.urls),
+    path('dn-admin/redis/', include('dj_redis_panel.urls')),
+    path('dn-admin/', admin.site.urls),
     path('', include('notification.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path("upload_csv", upload_csv_view, name="upload_csv"),
