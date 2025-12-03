@@ -103,7 +103,7 @@ class AlertNotificationTracking(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
 
     # states the kind of alert like "new" or "expiring"
-    alert_kind = models.CharField(max_length=20, default="")
+    alert_kind = models.CharField(max_length=20, default="New")
 
     def __str__(self):
         return f"{self.user.username} -> {self.alert.id}"

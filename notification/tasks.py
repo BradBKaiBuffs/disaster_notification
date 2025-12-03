@@ -258,8 +258,8 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
     if isinstance(alerts, NoaaAlert):
         alerts = [alerts]
 
-    subs = UserAreaSubscription.objects.all()
-
+    subs = subscriptions
+   
     # for testing, pushes a test alert to all also requires "test" in the message 
     testing = "test" in alerts[0].event.lower()
 
@@ -282,9 +282,13 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
         already_sent = AlertNotificationTracking.objects.filter(
             user=sub.user,
             alert=alerts[0],
+            alert_kind=alert_kind,
         ).exists()
 
         if already_sent:
+            # debug
+            print("already_sent user", {sub.user.username})
+            print("alert and kind", {alerts[0].id}, {alert_kind})
             continue
 
         # for sms alert notifications
@@ -294,10 +298,15 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
             to_number = format_phone_number(sub.phone_number)
             
             if sms_body:
+                # debug
+                print("SMS user", {sub.user.username})
+                print("kind", {alert_kind})
                 send_sms_vonage(to_number, sms_body)
 
         # for email alert notifications
         if sub.user.email and email_body:
+                print("SMS user", {sub.user.username})
+                print("kind", {alert_kind})
                 send_mail(
                     subject=f"Alerts ({len(alerts)})",
                     message=email_body,
@@ -312,6 +321,9 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
             alert=alerts[0],
             sent_at=timezone.now()
         )
+        # debug
+        print("tracked user", {sub.user.username})
+        print("alert and kind", {alerts[0].id}, {alert_kind})
 
 # checks for alerts that are close to expiration and notifies users
 @shared_task
@@ -372,7 +384,8 @@ def send_test_alert_to_user_task(alert, user):
 
 # found that an county can easily push out dozens of alerts so this is to limit the amount of texts/emails sent
 def combined_alert_summary(alerts):
-
+    # debug
+    print("alerts_count", {len(alerts)})
     if not alerts:
         print("No active alerts")
         return("","")
@@ -380,8 +393,10 @@ def combined_alert_summary(alerts):
     email_contents = []
     sms_contents = []
 
-    # email
+    # email + sms
     for alert in alerts:
+        # debug
+        print("alert_id and event", {alert.id}, {alert.event})
         email_contents.append(
             "Event:" + alert.event + "\n"
             "Area:" + alert.area_desc + "\n"
@@ -395,6 +410,9 @@ def combined_alert_summary(alerts):
     email_body = "Here are your current active alerts:".join(email_contents)
     sms_body = "Active alerts:" + " | ".join(sms_contents)
 
+    # debug
+    print("email_body_length", len(email_body))
+    print("sms_body_length", len(sms_body))
     return (email_body, sms_body)
 
 # with new subscriptions added to user page, this will activate and send the active alerts to the user via notify_users_task
@@ -402,6 +420,7 @@ def send_active_alerts_to_user_task(subscription):
 
     user = subscription.user
     now = timezone.now()
+    alert_kind = "New"
 
     # grab all the active alerts
     active_alerts = (
@@ -429,11 +448,17 @@ def send_active_alerts_to_user_task(subscription):
             alert_kind=alert_kind,
         ).exists()
 
+        # debug
+        print("alert", {alert.id})
+        print("alredy_sent", {already_sent})
+
         if not already_sent:
             new_alerts.append(alert)
 
     # no new alerts means nothing gets sent
     if not new_alerts:
+        # debug
+        print("no new alerts to send")
         return
 
     # mark the alerts as tracked
@@ -444,6 +469,8 @@ def send_active_alerts_to_user_task(subscription):
                 alert_kind=alert_kind,
                 sent_at=timezone.now(),
             )
+            print("tracked_user", {user.username})
+            print("alert and kind", {alert.id}, {alert_kind})
 
     email_body, sms_body = combined_alert_summary(new_alerts)
 
@@ -453,5 +480,4 @@ def send_active_alerts_to_user_task(subscription):
         email_body=email_body,
         sms_body=sms_body
     )
-
-
+    print("notify_users_task called")
