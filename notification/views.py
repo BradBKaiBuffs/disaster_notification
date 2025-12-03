@@ -603,8 +603,8 @@ def user_alerts_view(request):
         for sub in subscriptions:
 
                 # debug for actual alert matching in the loop
-                # print("alert ID:", alert.id)
-                # print("alert event:", alert.event)
+                print("alert ID:", alert.id)
+                print("alert event:", alert.event)
 
                 # same code from geocode comprises of fips
                 same_raw = alert.geocode.get("SAME", [])
@@ -619,16 +619,16 @@ def user_alerts_view(request):
                     same_normalized.append(last5)
 
                 # debug
-                # print("raw same list:", same_raw)
-                # print("normalized same fips list:", same_normalized)
+                print("raw same list:", same_raw)
+                print("normalized same fips list:", same_normalized)
 
                 # user sub info
-                # print("user subscription — State and county:", sub.state, " ", sub.county)
+                print("user subscription — State and county:", sub.state, " ", sub.county)
 
                 # storm event table fips
                 user_fips = grab_fips(sub)
                 # debug
-                # print("user fips (raw):", user_fips)
+                print("user fips (raw):", user_fips)
 
                 if user_fips:
                     user_fips_norm = str(user_fips).zfill(5)
@@ -636,7 +636,7 @@ def user_alerts_view(request):
                     user_fips_norm = None
 
                 # deubg
-                # print("user fips (normalized):", user_fips_norm)
+                print("user fips (normalized):", user_fips_norm)
 
                 # check 
                 if user_fips_norm in same_normalized:
@@ -645,9 +645,9 @@ def user_alerts_view(request):
                     break
                 # else:
                     # debug
-                    # print("no match")
+                    print("no match")
                 # debug
-                # print("end matching loop")
+                print("end matching loop")
 
     # NOT USED ANYMORE
     # grabs all areas from active alerts

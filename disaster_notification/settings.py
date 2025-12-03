@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # adding specific hosts and domains
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'railway.app', 'disasternotification-production.up.railway.app', os.environ.get('HOST',''),]
@@ -87,33 +87,33 @@ TEMPLATES = [
     },
 ]
 
-# # OWASP: Prevent MIME sniffing
-# SECURE_CONTENT_TYPE_NOSNIFF = True
+# OWASP: Prevent MIME sniffing
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# # OWASP: Strict-Transport-Security (HSTS)
-# # one year
-# SECURE_HSTS_SECONDS = 31536000
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
+# OWASP: Strict-Transport-Security (HSTS)
+# one year
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
-# # Redirect HTTP to HTTPS
-# SECURE_SSL_REDIRECT = True
+# Redirect HTTP to HTTPS
+SECURE_SSL_REDIRECT = True
 
-# # Use secure cookies
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
+# Use secure cookies
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
-# # Extra cookie hardening
-# SESSION_COOKIE_HTTPONLY = True
-# CSRF_COOKIE_HTTPONLY = True
+# Extra cookie hardening
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 
-# # Disallow embedding in iframes
-# X_FRAME_OPTIONS = "DENY"
+# Disallow embedding in iframes
+X_FRAME_OPTIONS = "DENY"
 
-# # Tell Django your proxy uses HTTPS (Railway)
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Tells Django proxy uses HTTPS (Railway)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# WSGI_APPLICATION = 'disaster_notification.wsgi.application'
+WSGI_APPLICATION = 'disaster_notification.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -121,7 +121,7 @@ TEMPLATES = [
 # PostgreSQL in Railway configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# fallback to sqlite if/else statement
+# Fallback to sqlite if/else statement
 if DATABASE_URL:
     print("Connecting to PostgreSQL")
     DATABASES = {
