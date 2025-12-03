@@ -118,7 +118,12 @@ def forecasting_view(request):
     states = list(grab_states())
     selected_state = request.GET.get("state", states[0])
 
-    county_map = {s: list(grab_counties_for_state(s)) for s in states}
+    county_map = {}
+
+    for state in states:
+        counties = grab_counties_for_state(state)
+        county_map[state] = list(counties)
+
 
     counties = county_map[selected_state]
     selected_county = request.GET.get("county", counties[0])
