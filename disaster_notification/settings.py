@@ -154,6 +154,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'notification.tasks.grab_noaa_alerts_task',
         'schedule': crontab(minute='*/10')
     },
+        'expiring-alerts-every-5-mins': {
+        'task': 'notification.tasks.expiring_alerts_task',
+        'schedule': crontab(minute='*/5'),
+    },
 }
 REDIS_URL = os.environ.get('REDIS_URL')
 stored_redis_url = urlparse(REDIS_URL)

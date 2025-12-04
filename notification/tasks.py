@@ -267,6 +267,11 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
     # for testing, pushes a test alert to all also requires "test" in the message 
     testing = "test" in alerts[0].event.lower()
 
+    # toggle to change testing, just going to comment out when testing
+    if testing:
+        print("Not testing")
+        return
+
     for sub in subs:
 
         if not testing:
@@ -324,6 +329,7 @@ def notify_users_task(alerts, alert_kind, email_body=None, sms_body=None):
         AlertNotificationTracking.objects.create(
             user=sub.user,
             alert=alerts[0],
+            alert_kind=alert_kind,
             sent_at=timezone.now()
         )
         # debug
