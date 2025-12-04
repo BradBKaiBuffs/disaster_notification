@@ -30,6 +30,8 @@ def parse_noaa_datetime(dt_str):
 # celery task that grabs alerts from noaa
 @shared_task
 def grab_noaa_alerts_task():
+    # debug since worker showing an issue with updated task
+    print("TESTING")
     try:
         # noaa wants to know contact information for whoever pulls their data
         headers = {
@@ -99,6 +101,8 @@ def grab_noaa_alerts_task():
                 id=alert_id,
                 defaults=defaults_for_model,
             )
+
+            email_body, sms_body = combined_alert_summary([obj])
 
             if created:
                 notify_users_task(obj, "new", email_body=email_body, sms_body=sms_body)

@@ -573,13 +573,13 @@ def subscribe_view(request):
 # personalized user page view
 def user_alerts_view(request):
     # debug
-    print("user:", request.user)
+    # print("user:", request.user)
 
     # grabs all subscriptions for the logged in user and is used for alerts and charts
     subscriptions = UserAreaSubscription.objects.filter(user=request.user)
     # debugging
-    print("subs:", list(subscriptions.values("state", "county")))
-    print("sub count:", subscriptions.count())
+    # print("subs:", list(subscriptions.values("state", "county")))
+    # print("sub count:", subscriptions.count())
 
     active_alerts = []
 
@@ -603,8 +603,8 @@ def user_alerts_view(request):
         for sub in subscriptions:
 
                 # debug for actual alert matching in the loop
-                print("alert ID:", alert.id)
-                print("alert event:", alert.event)
+                # print("alert ID:", alert.id)
+                # print("alert event:", alert.event)
 
                 # same code from geocode comprises of fips
                 same_raw = alert.geocode.get("SAME", [])
@@ -619,16 +619,16 @@ def user_alerts_view(request):
                     same_normalized.append(last5)
 
                 # debug
-                print("raw same list:", same_raw)
-                print("normalized same fips list:", same_normalized)
+                # print("raw same list:", same_raw)
+                # print("normalized same fips list:", same_normalized)
 
-                # user sub info
-                print("user subscription — State and county:", sub.state, " ", sub.county)
+                # # user sub info
+                # print("user subscription — State and county:", sub.state, " ", sub.county)
 
                 # storm event table fips
                 user_fips = grab_fips(sub)
                 # debug
-                print("user fips (raw):", user_fips)
+                # print("user fips (raw):", user_fips)
 
                 if user_fips:
                     user_fips_norm = str(user_fips).zfill(5)
