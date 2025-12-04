@@ -402,25 +402,26 @@ def combined_alert_summary(alerts):
         # print("No active alerts")
         return("","")
 
-    email_contents = []
-    sms_contents = []
+    email_body = "Here are your active alerts:\n\n"
+    site_link = "https://disasternotification-production.up.railway.app/"
 
     # email + sms
     for alert in alerts:
         # debug
         # print("alert_id and event", {alert.id}, {alert.event})
-        email_contents.append(
-            "Event:" + alert.event + "\n"
-            "Area:" + alert.area_desc + "\n"
-            "Severity:" + alert.severity + "\n"
-            "Expires:" + str(alert.expires) + "\n"
+        email_body += (
+            "Event: " + alert.event + "\n"
+            "Area: " + alert.area_desc + "\n"
+            "Severity: " + alert.severity + "\n"
+            "Expires: " + str(alert.expires) + "\n"
+            "View here: " + site_link + "\n"
         )
 
     # sms will just show alert event due to character restrictions
-    sms_contents.append(alert.event)
-
-    email_body = "Here are your current active alerts:".join(email_contents)
-    sms_body = "Active alerts:" + " | ".join(sms_contents)
+    sms_body = (
+        "You have alerts."
+        "View here: " + site_link
+    )
 
     # debug
     # print("email_body_length", len(email_body))
