@@ -419,7 +419,7 @@ def combined_alert_summary(alerts):
 
     # sms will just show alert event due to character restrictions
     sms_body = (
-        "You have alerts."
+        "You have alerts.\n\n"
         "View here: " + site_link
     )
 
