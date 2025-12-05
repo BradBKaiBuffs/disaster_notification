@@ -102,7 +102,12 @@ def grab_noaa_alerts_task():
                 defaults=defaults_for_model,
             )
 
-            email_body, sms_body = combined_alert_summary([obj])
+            if created:
+                alert_kind = "new"
+            else:
+                alert_kind = "update"
+
+            email_body, sms_body = combined_alert_summary([obj], alert_kind)
 
             if created:
                 notify_users_task(obj, "new", email_body=email_body, sms_body=sms_body)
@@ -353,7 +358,7 @@ def expiring_alerts_task():
     )
 
     for alert in expiring:
-        email_body, sms_body = combined_alert_summary([alert])
+        email_body, sms_body = combined_alert_summary([alert], "expires")
 
         notify_users_task(
             alerts=[alert],
