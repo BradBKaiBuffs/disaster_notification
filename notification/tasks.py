@@ -394,15 +394,27 @@ def send_test_alert_to_user_task(alert, user):
         print("Test email failed:", e)
 
 # found that an county can easily push out dozens of alerts so this is to limit the amount of texts/emails sent
-def combined_alert_summary(alerts):
+def combined_alert_summary(alerts, alert_kind):
     # debug
     # print("alerts_count", {len(alerts)})
+
     if not alerts:
         #
         # print("No active alerts")
         return("","")
 
-    email_body = "Here are your active alerts:\n\n"
+    # different header for each alert kind status
+    if alert_kind.lower() == "new":
+        header = "New alert:\n\n"
+        sms_header = "You have new alerts.\n]n"
+    elif alert_kind.lower() == "update":
+        header = "You have updated alerts:\n\n"
+        sms_header = "You have updated alerts.\n\n"
+    else:
+        header = "Alert expiring:\n\n"
+        sms_header = "An have an alert expring.\n\n"
+
+    email_body = header
     site_link = "https://disasternotification-production.up.railway.app/"
 
     # email + sms
@@ -419,8 +431,8 @@ def combined_alert_summary(alerts):
 
     # sms will just show alert event due to character restrictions
     sms_body = (
-        "You have alerts.\n\n"
-        "View here: " + site_link
+        sms_header
+        + "View here: " + site_link
     )
 
     # debug
