@@ -406,7 +406,7 @@ def combined_alert_summary(alerts, alert_kind):
     # different header for each alert kind status
     if alert_kind.lower() == "new":
         header = "New alert:\n\n"
-        sms_header = "You have new alerts.\n]n"
+        sms_header = "You have new alerts.\n\n"
     elif alert_kind.lower() == "update":
         header = "You have updated alerts:\n\n"
         sms_header = "You have updated alerts.\n\n"
