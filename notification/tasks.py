@@ -406,13 +406,13 @@ def combined_alert_summary(alerts, alert_kind):
     # different header for each alert kind status
     if alert_kind.lower() == "new":
         header = "New alert:\n\n"
-        sms_header = "You have new alerts.\n\n"
+        sms_header = "You have new alerts.\n"
     elif alert_kind.lower() == "update":
         header = "You have updated alerts:\n\n"
-        sms_header = "You have updated alerts.\n\n"
+        sms_header = "You have updated alerts.\n"
     else:
         header = "Alert expiring:\n\n"
-        sms_header = "An have an alert expring.\n\n"
+        sms_header = "You have an alert expiring.\n"
 
     email_body = header
     site_link = "https://disasternotification-production.up.railway.app/"
@@ -426,7 +426,7 @@ def combined_alert_summary(alerts, alert_kind):
             "Area: " + alert.area_desc + "\n"
             "Severity: " + alert.severity + "\n"
             "Expires: " + str(alert.expires) + "\n"
-            "View here: " + site_link + "\n"
+            "View here: " + site_link + "\n\n"
         )
 
     # sms will just show alert event due to character restrictions
