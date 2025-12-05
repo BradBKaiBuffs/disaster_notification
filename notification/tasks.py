@@ -426,7 +426,7 @@ def combined_alert_summary(alerts, alert_kind):
             "Area: " + alert.area_desc + "\n"
             "Severity: " + alert.severity + "\n"
             "Expires: " + str(alert.expires) + "\n"
-            "View here: " + site_link + "\n\n"
+            "View here: " + site_link + "\n"
         )
 
     # sms will just show alert event due to character restrictions
@@ -498,11 +498,10 @@ def send_active_alerts_to_user_task(subscription):
             # print("tracked_user", {user.username})
             # print("alert and kind", {alert.id}, {alert_kind})
 
-    email_body, sms_body = combined_alert_summary(new_alerts)
+    email_body, sms_body = combined_alert_summary(new_alerts, alert_kind)
 
     notify_users_task(
         alerts=new_alerts,
-        alert_kind="new",
         email_body=email_body,
         sms_body=sms_body
     )
