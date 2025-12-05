@@ -503,6 +503,7 @@ def send_active_alerts_to_user_task(subscription):
     notify_users_task(
         alerts=new_alerts,
         email_body=email_body,
+        alert_kind=alert_kind
         sms_body=sms_body
     )
     print("notify_users_task called")
